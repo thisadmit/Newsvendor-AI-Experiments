@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Newsvendor Experiment - AI Reason Added</title>
+    <title>Newsvendor Experiment - Production Version</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -17,11 +17,13 @@
         .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
         .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        h2 { margin-top: 0; font-size: 1.1rem; color: var(--text-sub); text-transform: uppercase; }
         .ai-advice-box { border: 2px solid var(--ai-border); background: var(--ai-bg); padding: 20px; border-radius: 8px; position: relative; margin-bottom: 20px; }
         .ai-badge { position: absolute; top: -10px; left: 15px; background: var(--ai-color); color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
         .ai-reason { margin-top: 10px; padding: 12px; background: #ede9fe; border-radius: 6px; font-size: 0.95rem; color: #4c1d95; border-left: 3px solid var(--ai-color); }
         .input-group input { width: 100%; padding: 15px; font-size: 1.2rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+        .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: opacity 0.2s; }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .chart-container { flex-grow: 1; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px; position: relative; min-height: 250px; }
         .history-log { height: 200px; overflow-y: auto; border-top: 1px solid #e5e7eb; }
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -40,8 +42,8 @@
         <div class="card">
             <h2>Decision Context</h2>
             <div style="background:#eff6ff; padding:15px; border-left:4px solid var(--primary-color); border-radius:4px; margin-bottom:20px;">
-                <div style="margin:5px 0;">🛒 제품 판매가: 12,000원</div>
-                <div style="margin:5px 0;">📦 제품 원가: 3,000원</div>
+                <div style="margin:5px 0;">🛒 제품 판매가: <strong>12,000원</strong></div>
+                <div style="margin:5px 0;">📦 제품 원가: <strong>3,000원</strong></div>
             </div>
 
             <div class="ai-advice-box">
@@ -51,9 +53,9 @@
             </div>
 
             <div class="input-group">
-                <label style="display:block; margin-bottom:8px; font-weight:bold;">최종 주문량 입력</label>
-                <input type="number" id="order-qty" placeholder="예: 150">
-                <button class="submit-btn" onclick="submitOrder()">주문 제출 (Submit)</button>
+                <label style="display:block; margin-bottom:8px; font-weight:bold;">최종 주문량 입력 (Order Quantity)</label>
+                <input type="number" id="order-qty" placeholder="수량 입력">
+                <button class="submit-btn" id="main-submit-btn" onclick="submitOrder()">주문 제출 (Submit)</button>
             </div>
         </div>
 
@@ -70,10 +72,10 @@
     </div>
 
     <script>
-        // 1. Supabase 초기화
+        // 1. Supabase 설정
         const _supabase = supabase.createClient('https://rrbiyvcjtqvdfhudagnk.supabase.co', 'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV');
 
-        // 2. 실험 변수
+        // 2. 실험 상수 및 변수
         let currentRound = 1;
         const maxRounds = 15;
         let totalProfit = 0;
@@ -84,7 +86,7 @@
 
         const historyData = { rounds: [], aiPreds: [], userOrders: [], actualDemands: [] };
 
-        // 3. 실제 수요 생성 (평균 150, 표준편차 30)
+        // 3. 실제 수요 생성 (Box-Muller Transform 정규분포)
         function getActualDemand() {
             let u = 0, v = 0;
             while(u === 0) u = Math.random(); 
@@ -95,32 +97,40 @@
 
         function generateNewScenario() {
             const actual = getActualDemand();
-            const aiPred = Math.round(actual + (Math.random() * 30 - 15));
+            const aiPred = Math.round(actual + (Math.random() * 30 - 15)); // AI는 실제 수요 근처에서 노이즈 포함 추천
             document.getElementById('ai-prediction').innerText = aiPred;
             
-            const reasons = ["과거 판매 추이를 분석한 결과입니다.", "재고 부족 비용을 고려한 추천량입니다.", "현재 시장 변동성을 반영하였습니다."];
+            const reasons = [
+                "과거 3주간의 판매량과 계절적 요인을 반영한 최적치입니다.",
+                "재고 부족으로 인한 기회 비용을 최소화하도록 계산되었습니다.",
+                "최근 시장의 변동성을 고려하여 보수적으로 산출된 결과입니다.",
+                "유사한 가격대의 과거 데이터를 학습한 알고리즘의 추천값입니다."
+            ];
             document.getElementById('ai-reason-text').innerText = reasons[Math.floor(Math.random()*reasons.length)];
 
             window.currentScenario = { ai: aiPred, actual: actual };
-            document.getElementById('order-qty').value = '';
-            document.getElementById('order-qty').focus();
+            const input = document.getElementById('order-qty');
+            input.value = '';
+            input.focus();
         }
 
         async function submitOrder() {
             const input = document.getElementById('order-qty');
             const qty = parseInt(input.value);
-            if (isNaN(qty) || qty < 0) return alert("올바른 수량을 입력하세요.");
+            if (isNaN(qty) || qty < 0) return alert("유효한 주문 수량을 입력해 주세요.");
 
             const demand = window.currentScenario.actual;
-            const profit = (Math.min(qty, demand) * price) - (qty * cost);
-            totalProfit += profit;
+            const sold = Math.min(qty, demand);
+            const roundProfit = (sold * price) - (qty * cost);
+            totalProfit += roundProfit;
 
+            // 데이터 기록
             historyData.rounds.push(currentRound);
             historyData.aiPreds.push(window.currentScenario.ai);
             historyData.userOrders.push(qty);
             historyData.actualDemands.push(demand);
 
-            updateHistoryTable(currentRound, window.currentScenario.ai, qty, demand, profit);
+            updateHistoryTable(currentRound, window.currentScenario.ai, qty, demand, roundProfit);
             drawChart();
 
             if (currentRound < maxRounds) {
@@ -141,12 +151,25 @@
         function updateHistoryTable(rnd, ai, order, actual, profit) {
             const tbody = document.getElementById('history-table-body');
             const error = order - actual;
-            const errorText = error === 0 ? "정확" : (error > 0 ? `+${error} 과잉` : `${error} 부족`);
-            const row = `<tr><td>${rnd}</td><td>${ai}</td><td>${order}</td><td>${actual}</td><td>${errorText}</td><td>${profit.toLocaleString()}</td></tr>`;
+            const errorStyle = error === 0 ? "color:green" : "color:red";
+            const errorText = error === 0 ? "정확함" : (error > 0 ? `+${error} (과잉)` : `${error} (부족)`);
+            
+            const row = `<tr>
+                <td>${rnd}</td>
+                <td style="color:#7c3aed; font-weight:bold;">${ai}</td>
+                <td style="font-weight:bold;">${order}</td>
+                <td style="font-weight:bold;">${actual}</td>
+                <td style="${errorStyle}">${errorText}</td>
+                <td>${profit.toLocaleString()}</td>
+            </tr>`;
             tbody.insertAdjacentHTML('afterbegin', row);
         }
 
         async function saveToSupabase() {
+            const btn = document.getElementById('main-submit-btn');
+            btn.innerText = "데이터 전송 중...";
+            btn.disabled = true;
+
             const { error } = await _supabase.from('experiment_results').insert([{
                 prolific_id: prolificID,
                 total_profit: totalProfit,
@@ -156,4 +179,63 @@
             }]);
 
             if (error) {
-                alert("저장 오류가 발생했습니다. 화면을 캡처해 주세요.");
+                console.error("저장 실패:", error);
+                alert("⚠️ 저장 중 오류 발생: " + error.message + "\n화면을 캡처한 후 연구자에게 문의하세요.");
+                btn.innerText = "저장 재시도";
+                btn.disabled = false;
+            } else {
+                alert("✅ 실험이 완료되었습니다!\n데이터가 서버(Supabase)로 성공적으로 전송되었습니다.");
+                // Prolific 완료 페이지로 자동 이동 설정 시 아래 주석 해제
+                // window.location.href = "https://app.prolific.com/submissions/complete?cc=YOUR_CODE";
+            }
+        }
+
+        function drawChart() {
+            const canvas = document.getElementById('demandChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+            const w = canvas.width = container.clientWidth;
+            const h = canvas.height = container.clientHeight;
+            const pad = 40;
+
+            ctx.clearRect(0, 0, w, h);
+            if (historyData.rounds.length === 0) return;
+
+            const maxVal = 250, minVal = 50; // 고정 스케일
+            const xStep = (w - pad * 2) / (maxRounds - 1);
+            const getY = (val) => h - pad - ((val - minVal) / (maxVal - minVal) * (h - pad * 2));
+
+            // Grid Lines
+            ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+            for(let v=50; v<=250; v+=50) {
+                const y = getY(v);
+                ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w-pad, y); ctx.stroke();
+                ctx.fillStyle = "#9ca3af"; ctx.font = "10px Arial";
+                ctx.fillText(v, 5, y + 4);
+            }
+
+            const drawLine = (data, color, isDash=false) => {
+                ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+                if(isDash) ctx.setLineDash([5, 5]); else ctx.setLineDash([]);
+                data.forEach((v, i) => {
+                    const x = pad + (i * xStep), y = getY(v);
+                    if(i===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+                data.forEach((v, i) => {
+                    const x = pad + (i * xStep), y = getY(v);
+                    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1; ctx.stroke();
+                });
+            };
+
+            drawLine(historyData.actualDemands, "#1f2937");    // 실제 수요 (검정 실선)
+            drawLine(historyData.aiPreds, "#7c3aed", true);   // AI 추천 (보라 점선)
+            drawLine(historyData.userOrders, "#2563eb");     // 내 주문 (파랑 실선)
+        }
+
+        window.onload = () => { generateNewScenario(); updateRoundUI(); drawChart(); };
+    </script>
+</body>
+</html>
