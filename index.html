@@ -1,0 +1,133 @@
+<div class="header">
+    <div class="round-info">ROUND <span id="current-round">1</span> / 15</div>
+    <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="score-info">누적 수익: <span id="total-profit">0</span> 원</div>
+</div>
+
+<div class="main-container">
+    <div class="card">
+        <h2>Decision Context</h2>
+        <div style="background:#eff6ff; padding:15px; border-radius:8px; margin-bottom:20px;">
+            <p>🛒 판매가: 12,000원 | 📦 원가: 3,000원</p>
+        </div>
+
+        <div class="ai-advice-box">
+            <span class="ai-badge">AI Advice</span>
+            <div style="font-size: 1.1rem;">추천 주문량: <strong style="font-size: 1.6rem; color: #7c3aed;" id="ai-prediction">-</strong> 개</div>
+            <div class="ai-reason" id="ai-reason-text">데이터 분석 중...</div>
+        </div>
+
+        <div class="input-group">
+            <input type="number" id="order-qty" placeholder="수량 입력">
+            <button class="submit-btn" onclick="submitOrder()">주문 제출 (Submit)</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="chart-container"><canvas id="demandChart"></canvas></div>
+        <div class="history-log">
+            <table>
+                <thead><tr><th>Rnd</th><th>AI추천</th><th>내주문</th><th>수요</th><th>오차</th><th>수익</th></tr></thead>
+                <tbody id="history-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Supabase 설정
+    const _supabase = supabase.createClient('https://rrbiyvcjtqvdfhudagnk.supabase.co', 'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV');
+
+    // 2. 실험 설정
+    let currentRound = 1;
+    const maxRounds = 15;
+    let totalProfit = 0;
+    const price = 12000, cost = 3000, salvage = 0;
+
+    // URL에서 Prolific ID 가져오기
+    const urlParams = new URLSearchParams(window.location.search);
+    const prolificID = urlParams.get('prolific_pid') || "test_user_" + Math.floor(Math.random()*1000);
+
+    const historyData = { rounds: [], aiPreds: [], userOrders: [], actualDemands: [] };
+
+    // 3. 실제 수요 생성 로직 (평균 150, 표준편차 30인 정규분포 가정)
+    function getActualDemand() {
+        const u1 = Math.random(), u2 = Math.random();
+        const randStdNormal = Math.sqrt(-2.0 * Math.log(u1)) * Math.sin(2.0 * Math.PI * u2);
+        return Math.round(150 + (30 * randStdNormal)); 
+    }
+
+    function generateNewScenario() {
+        const actual = getActualDemand();
+        // AI는 실제 수요에 약간의 오차(noise)를 더해 추천
+        const aiPred = Math.round(actual + (Math.random() * 20 - 10));
+        
+        document.getElementById('ai-prediction').innerText = aiPred;
+        const reasons = ["과거 패턴 분석 결과입니다.", "재고 부족 위험을 최소화한 수치입니다.", "수요 변동성을 고려한 최적값입니다."];
+        document.getElementById('ai-reason-text').innerText = reasons[Math.floor(Math.random() * reasons.length)];
+
+        window.currentScenario = { ai: aiPred, actual: actual };
+    }
+
+    async function submitOrder() {
+        const qty = parseInt(document.getElementById('order-qty').value);
+        if (isNaN(qty) || qty < 0) return alert("수량을 입력하세요.");
+
+        const demand = window.currentScenario.actual;
+        const profit = (Math.min(qty, demand) * price) - (qty * cost);
+        totalProfit += profit;
+
+        historyData.rounds.push(currentRound);
+        historyData.aiPreds.push(window.currentScenario.ai);
+        historyData.userOrders.push(qty);
+        historyData.actualDemands.push(demand);
+
+        updateUI(qty, demand, profit);
+
+        if (currentRound < maxRounds) {
+            currentRound++;
+            updateProgress();
+            generateNewScenario();
+            drawChart();
+        } else {
+            await saveToSupabase();
+        }
+    }
+
+    async function saveToSupabase() {
+        const { error } = await _supabase.from('experiment_results').insert([{
+            prolific_id: prolificID,
+            total_profit: totalProfit,
+            user_orders: historyData.userOrders.toString(),
+            actual_demands: historyData.actualDemands.toString(),
+            ai_recommendations: historyData.aiPreds.toString()
+        }]);
+
+        if (error) {
+            console.error(error);
+            alert("저장 중 오류 발생. 데이터를 수동으로 캡처하세요.");
+        } else {
+            alert("실험 종료! 데이터가 저장되었습니다.");
+            // Prolific 완료 코드가 있다면 아래 주석 해제
+            // window.location.href = "https://app.prolific.com/submissions/complete?cc=YOUR_CODE";
+        }
+    }
+
+    function updateUI(order, actual, profit) {
+        const tbody = document.getElementById('history-table-body');
+        const row = `<tr><td>${currentRound}</td><td>${window.currentScenario.ai}</td><td>${order}</td><td>${actual}</td><td>${order-actual}</td><td>${profit.toLocaleString()}</td></tr>`;
+        tbody.insertAdjacentHTML('afterbegin', row);
+        document.getElementById('total-profit').innerText = totalProfit.toLocaleString();
+    }
+
+    function updateProgress() {
+        document.getElementById('current-round').innerText = currentRound;
+        document.getElementById('progress-bar').style.width = (currentRound/maxRounds*100) + "%";
+    }
+
+    // 초기 실행
+    window.onload = () => { generateNewScenario(); drawChart(); };
+
+    // (이전 drawChart 로직 포함...)
+    function drawChart() { /* 이전 답변에서 드린 그리드 포함 차트 코드 */ }
+</script>
