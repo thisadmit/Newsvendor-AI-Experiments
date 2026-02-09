@@ -3,51 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Newsvendor Experiment</title>
+    <title>Newsvendor Experiment - AI Advice</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --ai-color: #7c3aed; }
-        body { font-family: sans-serif; background: var(--bg-color); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .progress-container { flex-grow: 1; margin: 0 20px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
+        :root {
+            --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff;
+            --text-main: #1f2937; --text-sub: #6b7280; --ai-color: #7c3aed; --ai-bg: #f5f3ff;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        
+        /* 헤더 스타일 */
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .info-group { display: flex; gap: 20px; font-size: 0.9rem; color: var(--text-sub); }
+        .info-item b { color: var(--text-main); }
+        .progress-container { flex-grow: 1; margin: 0 30px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
+
         .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; }
-        .ai-advice-box { border: 2px solid #ddd6fe; background: #f5f3ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .input-group input { width: 100%; padding: 12px; font-size: 1.1rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        .submit-btn { width: 100%; padding: 12px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .chart-container { flex-grow: 1; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 15px; min-height: 200px; }
-        .history-log { height: 150px; overflow-y: auto; font-size: 0.85rem; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* 좌측 정보창 스타일 */
+        .context-box { background: #eff6ff; padding: 15px; border-left: 4px solid var(--primary-color); border-radius: 4px; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; }
+        .ai-advice-box { border: 2px solid #ddd6fe; background: var(--ai-bg); padding: 20px; border-radius: 8px; margin-bottom: 20px; position: relative; }
+        .ai-badge { position: absolute; top: -10px; left: 15px; background: var(--ai-color); color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        
+        /* 입력창 스타일 */
+        .input-group input { width: 100%; padding: 15px; font-size: 1.2rem; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 15px; box-sizing: border-box; }
+        .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* 그래프 및 히스토리 */
+        .chart-container { flex-grow: 1; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px; min-height: 250px; position: relative; }
+        .history-log { height: 200px; overflow-y: auto; border-top: 1px solid #e5e7eb; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th, td { padding: 10px; border-bottom: 1px solid #f3f4f6; text-align: left; }
+        th { background: #f9fafb; position: sticky; top: 0; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div>ROUND <span id="current-round">1</span> / 15</div>
+        <div class="info-group">
+            <div class="info-item">판매가: <b>12,000원</b></div>
+            <div class="info-item">원가: <b>3,000원</b></div>
+            <div class="info-item">수요 분포: <b>U [1, 100]</b></div>
+        </div>
         <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
-        <div>수익: <span id="total-profit">0</span>원</div>
+        <div style="font-weight: bold;">ROUND <span id="current-round">1</span>/15 | 수익: <span id="total-profit">0</span>원</div>
     </div>
 
     <div class="main-container">
         <div class="card">
-            <h3>Decision Context</h3>
-            <div class="ai-advice-box">
-                <div style="color:var(--ai-color); font-weight:bold;">AI 추천: <span id="ai-prediction">-</span>개</div>
-                <div id="ai-reason-text" style="font-size:0.9rem; margin-top:5px; color:#666;">계산 중...</div>
+            <h2>Decision Panel</h2>
+            <div class="context-box">
+                매 라운드 제품의 실제 수요는 <b>1부터 100 사이</b>에서 동일한 확률로 결정됩니다 (균등 분포). 재고가 부족하면 판매 기회를 잃으며, 남은 재고는 처분 가치가 0원입니다.
             </div>
+
+            <div class="ai-advice-box">
+                <span class="ai-badge">AI Recommendation</span>
+                <div style="font-size: 1rem; color: var(--ai-color); font-weight: bold;">추천 주문량: <span id="ai-prediction" style="font-size: 1.6rem;">-</span> 개</div>
+                <div id="ai-reason-text" style="margin-top:10px; color:#555; font-size:0.9rem; line-height:1.4;">데이터를 분석하고 있습니다...</div>
+            </div>
+
             <div class="input-group">
-                <input type="number" id="order-qty" placeholder="주문량 입력">
-                <button class="submit-btn" id="btn-submit" onclick="submitOrder()">주문 제출</button>
+                <label style="display:block; margin-bottom:8px; font-weight:bold; font-size:0.9rem;">이번 라운드 주문량 입력:</label>
+                <input type="number" id="order-qty" min="0" max="200" placeholder="0 ~ 100 사이 권장">
+                <button class="submit-btn" id="btn-submit" onclick="submitOrder()">주문 제출 (Submit)</button>
             </div>
         </div>
 
         <div class="card">
+            <h2>Demand History</h2>
             <div class="chart-container"><canvas id="demandChart"></canvas></div>
             <div class="history-log">
                 <table>
-                    <thead><tr><th>Rnd</th><th>AI</th><th>나</th><th>수요</th><th>수익</th></tr></thead>
+                    <thead>
+                        <tr><th>Rnd</th><th>AI 추천</th><th>내 주문</th><th>실제 수요</th><th>수익</th></tr>
+                    </thead>
                     <tbody id="history-table-body"></tbody>
                 </table>
             </div>
@@ -55,27 +87,50 @@
     </div>
 
     <script>
+        // 1. Supabase 초기화
         const _supabase = supabase.createClient('https://rrbiyvcjtqvdfhudagnk.supabase.co', 'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV');
 
+        // 2. 실험 변수 (수정됨)
         let currentRound = 1;
         const maxRounds = 15;
         let totalProfit = 0;
+        const price = 12000, cost = 3000;
+        
         const historyData = { rounds: [], aiPreds: [], userOrders: [], actualDemands: [] };
+        const urlParams = new URLSearchParams(window.location.search);
+        const pid = urlParams.get('prolific_pid') || "test_" + Math.random().toString(36).substr(2, 5);
+
+        // 3. 수요 생성 로직: U[1, 100] (요청 사항 반영)
+        function getActualDemand() {
+            return Math.floor(Math.random() * 100) + 1;
+        }
 
         function generateNewScenario() {
-            const actual = Math.max(50, Math.round(150 + (Math.random() * 60 - 30)));
-            const ai = Math.round(actual + (Math.random() * 20 - 10));
+            const actual = getActualDemand();
+            // AI 추천: 실제 수요에 약간의 노이즈를 섞음 (실험용)
+            const ai = Math.max(1, Math.min(100, Math.round(actual + (Math.random() * 16 - 8))));
+            
             document.getElementById('ai-prediction').innerText = ai;
-            document.getElementById('ai-reason-text').innerText = "과거 데이터를 기반으로 분석한 추천 수량입니다.";
+            const reasons = [
+                "균등 분포의 기댓값과 과거 추세를 결합하여 산출했습니다.",
+                "재고 부족 비용(9,000원)이 재고 과잉 비용(3,000원)보다 크므로 공격적 주문을 권장합니다.",
+                "최적화 알고리즘이 수익 극대화를 위해 제안한 수치입니다."
+            ];
+            document.getElementById('ai-reason-text').innerText = reasons[Math.floor(Math.random() * reasons.length)];
+            
             window.currentScenario = { ai, actual };
+            document.getElementById('order-qty').value = '';
+            document.getElementById('order-qty').focus();
         }
 
         async function submitOrder() {
-            const qty = parseInt(document.getElementById('order-qty').value);
-            if (isNaN(qty)) return alert("수량을 입력하세요.");
+            const input = document.getElementById('order-qty');
+            const qty = parseInt(input.value);
+            if (isNaN(qty) || qty < 0) return alert("올바른 수량을 입력하세요.");
 
             const demand = window.currentScenario.actual;
-            const profit = (Math.min(qty, demand) * 12000) - (qty * 3000);
+            const sold = Math.min(qty, demand);
+            const profit = (sold * price) - (qty * cost);
             totalProfit += profit;
 
             historyData.rounds.push(currentRound);
@@ -83,30 +138,39 @@
             historyData.userOrders.push(qty);
             historyData.actualDemands.push(demand);
 
-            const row = `<tr><td>${currentRound}</td><td>${window.currentScenario.ai}</td><td>${qty}</td><td>${demand}</td><td>${profit.toLocaleString()}</td></tr>`;
-            document.getElementById('history-table-body').insertAdjacentHTML('afterbegin', row);
-            document.getElementById('total-profit').innerText = totalProfit.toLocaleString();
-
+            updateUI(qty, demand, profit);
             drawChart();
 
             if (currentRound < maxRounds) {
                 currentRound++;
-                document.getElementById('current-round').innerText = currentRound;
-                document.getElementById('progress-bar').style.width = (currentRound/maxRounds*100) + "%";
+                updateProgress();
                 generateNewScenario();
-                document.getElementById('order-qty').value = '';
             } else {
                 await saveToSupabase();
             }
         }
 
+        function updateUI(qty, demand, profit) {
+            const row = `<tr>
+                <td>${currentRound}</td>
+                <td style="color:var(--ai-color); font-weight:bold;">${window.currentScenario.ai}</td>
+                <td style="font-weight:bold;">${qty}</td>
+                <td>${demand}</td>
+                <td>${profit.toLocaleString()}원</td>
+            </tr>`;
+            document.getElementById('history-table-body').insertAdjacentHTML('afterbegin', row);
+            document.getElementById('total-profit').innerText = totalProfit.toLocaleString();
+        }
+
+        function updateProgress() {
+            document.getElementById('current-round').innerText = currentRound;
+            document.getElementById('progress-bar').style.width = (currentRound / maxRounds * 100) + "%";
+        }
+
         async function saveToSupabase() {
             const btn = document.getElementById('btn-submit');
-            btn.innerText = "전송 중...";
+            btn.innerText = "데이터 전송 중...";
             btn.disabled = true;
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const pid = urlParams.get('prolific_pid') || "test_" + Math.random().toString(36).substr(2, 5);
 
             const { error } = await _supabase.from('experiment_results').insert([{
                 prolific_id: pid,
@@ -117,35 +181,16 @@
             }]);
 
             if (error) alert("저장 실패: " + error.message);
-            else alert("✅ 실험 완료! 데이터가 성공적으로 저장되었습니다.");
+            else alert("✅ 실험이 완료되었습니다! 데이터가 저장되었습니다.");
         }
 
+        // 4. 차트 그리기 (그리드 가로/세로선 추가)
         function drawChart() {
             const canvas = document.getElementById('demandChart');
+            if(!canvas) return;
             const ctx = canvas.getContext('2d');
-            const w = canvas.width = canvas.parentElement.clientWidth;
-            const h = canvas.height = canvas.parentElement.clientHeight;
-            if (historyData.rounds.length === 0) return;
-
-            const pad = 30;
-            const xStep = (w - pad * 2) / (maxRounds - 1);
-            const getY = (v) => h - pad - ((v - 50) / 200 * (h - pad * 2));
-
-            const drawLine = (data, color) => {
-                ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
-                data.forEach((v, i) => {
-                    const x = pad + (i * xStep), y = getY(v);
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-            };
-
-            drawLine(historyData.actualDemands, "#1f2937");
-            drawLine(historyData.aiPreds, "#7c3aed");
-            drawLine(historyData.userOrders, "#2563eb");
-        }
-
-        window.onload = () => { generateNewScenario(); drawChart(); };
-    </script>
-</body>
-</html>
+            const container = canvas.parentElement;
+            const w = canvas.width = container.clientWidth;
+            const h = canvas.height = container.clientHeight;
+            
+            const
