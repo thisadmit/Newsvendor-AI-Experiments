@@ -26,6 +26,7 @@
             <p>💰 판매가: 12,000원</p>
             <p>📦 원가: <b id="display-cost">-</b>원</p>
             <p>📈 수요분포: U [1, 100]</p>
+            <p> 테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.</p>
         </div>
         <button class="submit-btn" onclick="startExperiment()">이해했습니다. 실험 시작</button>
     </div>
@@ -94,7 +95,7 @@
         function generateNewScenario() {
             const actual = Math.floor(Math.random() * 100) + 1;
             document.getElementById('ai-prediction').innerText = optimalQ;
-            document.getElementById('ai-reason-text').innerText = `Critical Ratio(${Math.round(criticalRatio*100)}%)를 고려한 이론적 최적 주문량은 ${optimalQ}개입니다.`;
+            document.getElementById('ai-reason-text').innerText = `Critical Ratio(${Math.round(criticalRatio*100)}%)를 고려한 이론적 최적 주문량은 ${optimalQ}개입니다.<br>테스트입니다.테스트입니다.테스트입니다.테스트입니다.<br>테스트입니다.테스트입니다.테스트입니다.`;
             window.currentScenario = { ai: optimalQ, actual: actual };
             const input = document.getElementById('order-qty');
             input.value = ''; input.focus();
