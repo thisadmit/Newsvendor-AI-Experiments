@@ -40,7 +40,48 @@
         th { background: #f9fafb; position: sticky; top: 0; }
     </style>
 </head>
+    
 <body>
+    <div id="instruction-section" style="max-width: 800px; margin: 50px auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        <h1 style="color: #2563eb;">실험 안내 및 동의</h1>
+        <hr>
+        <div style="line-height: 1.8; color: #374151;">
+            <p>본 실험에 참여해 주셔서 감사합니다. 귀하는 <b>재고 관리 담당자</b>로서 15라운드 동안 주문 의사결정을 수행하게 됩니다.</p>
+            <ul>
+                <li><b>제품 정보:</b> 판매가 12,000원 / 원가 3,000원</li>
+                <li><b>수요 정보:</b> 매 라운드 수요는 1~100 사이에서 무작위로 결정됩니다 ($U[1, 100]$).</li>
+                <li><b>보상:</b> 최종 누적 수익은 귀하의 성과 지표가 됩니다.</li>
+            </ul>
+            <p style="background: #fef2f2; padding: 10px; border-radius: 5px; color: #b91c1c;">
+                ※ 주의: 실험 도중 새로고침을 하면 데이터가 유실될 수 있습니다.
+            </p>
+        </div>
+        <button class="submit-btn" onclick="startExperiment()" style="margin-top: 20px;">이해했습니다. 실험 시작하기</button>
+    </div>
+
+    <div id="experiment-section" style="display: none;">
+        </div>
+
+    <script>
+        // 페이지 전환 함수
+        function startExperiment() {
+            // 설명창 숨기기
+            document.getElementById('instruction-section').style.display = 'none';
+            // 실험창 보이기
+            document.getElementById('experiment-section').style.display = 'block';
+            
+            // 실험 시작 시 차트 초기화 및 첫 시나리오 생성
+            if (typeof generateNewScenario === "function") {
+                generateNewScenario();
+            }
+            if (typeof drawChart === "function") {
+                drawChart();
+            }
+        }
+        
+        // 기존에 있던 스크립트 내용들 (Supabase 설정, submitOrder 등)을 이 아래에 이어서 작성하세요.
+    </script>
+</body>
 
     <div class="header">
         <div class="info-group">
