@@ -59,7 +59,7 @@
                     <button id="ai-ask-btn" class="submit-btn ai-btn">🤖 AI에게 세션 전략 묻기 </button>
                     <div id="ai-content" class="ai-advice-box" style="display:none;">
                         <div id="ai-loading">
-                            <span id="loading-text" style="font-weight:bold; color:var(--ai-color);">시장 데이터를 분석하는 중</span><span class="loading-dots"></span>
+                            <span id="loading-text" style="font-weight:bold; color:var(--ai-color);">데이터를 분석하는 중</span><span class="loading-dots"></span>
                         </div>
                         <div id="ai-result" style="display:none;">
                             <div style="color:var(--ai-color); font-weight:bold; font-size:1.1rem; margin-bottom:5px;">AI 추천 주문량: <span id="ai-prediction">-</span>개</div>
@@ -116,7 +116,7 @@
             
             const criticalRatio = (price - cost) / price;
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
-            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD}</b>입니다. 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
+            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD}</b>입니다. 1) 확률적 분석 결과... 2) 수익중심으로 분석해본 결과.... 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
             
             // [수정] 새 세션 시작 시 챗봇 상태 초기화
             isAiRevealedThisSession = false;
