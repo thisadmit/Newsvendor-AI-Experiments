@@ -35,7 +35,7 @@
 
         /* Modal Styles */
         #session-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
-        .modal-content { background-color: #fff; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; }
+        .modal-content { background-color: #fff; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .change-item { display: flex; justify-content: space-around; align-items: center; margin: 15px 0; padding: 15px; background: #f9fafb; border-radius: 12px; min-height: 60px; }
         .old-val { color: #94a3b8; text-decoration: line-through; font-size: 1.1rem; }
         .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
@@ -53,7 +53,7 @@
             <div class="change-item" id="cost-box"></div>
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">📈 수요 범위(Demand) 변화</div>
             <div class="change-item" id="dist-box"></div>
-            <button class="submit-btn" onclick="closeModal()">확인 및 다음 세션 시작</button>
+            <button class="submit-btn" id="modal-confirm-btn" onclick="closeModal()">확인 및 다음 세션 시작 (Enter)</button>
         </div>
     </div>
 
@@ -70,7 +70,7 @@
         </div>
         <div style="margin-top: 10px;">
             <label style="display:block; font-weight:bold; margin-bottom:8px;">피실험자 고유 코드 (Subject ID):</label>
-            <input type="text" id="subject-id" placeholder="고유 코드(학번)을 입력하고 Enter를 누르세요.">
+            <input type="text" id="subject-id" placeholder="ID를 입력하고 Enter를 누르세요.">
         </div>
         <button class="submit-btn" id="start-btn">지침을 이해했습니다. 실험 시작</button>
     </div>
@@ -131,15 +131,19 @@
             document.getElementById('ai-ask-btn').onclick = revealAIAdvice;
             document.getElementById('btn-submit').onclick = submitOrder;
 
-            // ID 입력창 엔터: 수치 체크 없이 실험 시작
-            document.getElementById('subject-id').onkeypress = (e) => { 
-                if(e.key === 'Enter') startExperiment(); 
-            };
-            
-            // 주문창 엔터: 수치 체크 후 주문 제출
-            document.getElementById('order-qty').onkeypress = (e) => { 
-                if(e.key === 'Enter') submitOrder(); 
-            };
+            // 전체 창에 대한 엔터 키 리스너 (세션 전환 모달용)
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const modal = document.getElementById('session-modal');
+                    if (modal.style.display === 'flex') {
+                        closeModal();
+                    }
+                }
+            });
+
+            // 입력 필드 전용 리스너
+            document.getElementById('subject-id').onkeypress = (e) => { if(e.key === 'Enter') startExperiment(); };
+            document.getElementById('order-qty').onkeypress = (e) => { if(e.key === 'Enter') submitOrder(); };
         });
 
         function updateEnvironment() {
@@ -215,8 +219,6 @@
         function submitOrder() {
             const qtyInput = document.getElementById('order-qty');
             const qty = parseInt(qtyInput.value);
-            
-            // 실제 주문 제출 시에만 범위 체크 로직 작동
             if (isNaN(qty) || qty < 0) {
                 showWarning("올바른 숫자를 입력하세요.");
                 qtyInput.focus();
@@ -269,6 +271,7 @@
                 distBox.innerHTML = `<span class="old-val">${oldDist}</span><span class="arrow">➔</span><span class="new-val">${newDist}</span>`;
             }
             document.getElementById('session-modal').style.display = 'flex';
+            document.getElementById('modal-confirm-btn').focus(); // 버튼에 포커스 줘서 엔터 즉시 작동 유도
         }
 
         function closeModal() {
