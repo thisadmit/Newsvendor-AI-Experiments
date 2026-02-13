@@ -96,10 +96,10 @@
             <div class="card">
                 <h3>Decision Panel</h3>
                 <div id="ai-area">
-                    <button id="ai-ask-btn" class="submit-btn ai-btn">🤖 Chatbot에게 세션 전략 묻기 (5초)</button>
+                    <button id="ai-ask-btn" class="submit-btn ai-btn">🤖 AI에게 세션 전략 묻기 (5초)</button>
                     <div id="ai-content" class="ai-advice-box" style="display:none;">
                         <div id="ai-loading">
-                            <span id="loading-text" style="font-weight:bold; color:var(--ai-color);">시장 데이터를 분석하는 중</span><span class="loading-dots"></span>
+                            <span id="loading-text" style="font-weight:bold; color:var(--ai-color);">데이터를 분석하는 중</span><span class="loading-dots"></span>
                         </div>
                         <div id="ai-result" style="display:none;">
                             <div style="color:var(--ai-color); font-weight:bold; font-size:1.1rem; margin-bottom:5px;">AI 추천 주문량: <span id="ai-prediction">-</span>개</div>
@@ -205,7 +205,7 @@
             isAiRevealedThisSession = true; 
             document.getElementById('ai-ask-btn').style.display = 'none';
             document.getElementById('ai-content').style.display = 'flex';
-            setTimeout(() => { document.getElementById('loading-text').innerText = "해당 세션의 최적 수준 산출 중"; }, 2500);
+            setTimeout(() => { document.getElementById('loading-text').innerText = "해당 세션의 최적 주문 수준 산출 중"; }, 2500);
             setTimeout(() => {
                 document.getElementById('ai-loading').style.display = 'none';
                 document.getElementById('ai-result').style.display = 'block';
