@@ -6,33 +6,61 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --ai-color: #7c3aed; }
-        body { font-family: sans-serif; background: var(--bg-color); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        * { box-sizing: border-box; } /* 입력창이 밖으로 나가는 현상 방지 */
+        
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Layout */
         .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .progress-container { flex-grow: 1; margin: 0 20px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
+        
         .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
-        .ai-advice-box { border: 2px solid #ddd6fe; background: #f5f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; min-height: 110px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
-        .loading-dots:after { content: ' .'; animation: dots 1.5s steps(5, end) infinite; }
-        @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } 80%, 100% { content: ''; } }
+        
+        /* UI Elements */
+        .instruction-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 15px 0; line-height: 1.6; font-size: 0.95rem; }
+        .ai-advice-box { border: 2px solid #ddd6fe; background: #f5f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--primary-color); outline: none; }
+
         .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
         .ai-btn { background: var(--ai-color); margin-bottom: 10px; }
+        
+        /* Animation */
+        .loading-dots:after { content: ' .'; animation: dots 1.5s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } 80%, 100% { content: ''; } }
+
         .chart-container { flex-grow: 1; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px; min-height: 250px; position: relative; }
         table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
-        th { background: #f9fafb; padding: 8px; border-bottom: 2px solid #eee; }
+        th { background: #f9fafb; padding: 8px; border-bottom: 2px solid #eee; text-align: center; }
         td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
-    <div id="instruction-section" class="card" style="max-width: 700px; margin: 50px auto;">
-        <h2>Newsvendor 실험</h2>
-        <p>총 4개의 세션(각 10라운드)을 진행합니다. 각 세션마다 <b>원가</b>와 <b>수요 범위</b>가 변경되니 주의하세요.</p>
-        <div style="margin: 20px 0;">
-            <label style="display:block; font-weight:bold; margin-bottom:10px;">피실험자 고유 코드:</label>
-            <input type="text" id="subject-id" placeholder="ID를 입력하세요" style="width:100%; padding:15px; border:2px solid #e5e7eb; border-radius:8px;">
+    <div id="instruction-section" class="card" style="max-width: 800px; margin: 30px auto; overflow-y: auto;">
+        <h2 style="margin-top:0;">📊 재고 관리 의사결정 실험 안내</h2>
+        <div class="instruction-box">
+            <p>본 실험에서는 재고 관리 담당자가 되어 상품의 <b>주문량</b>을 결정합니다.</p>
+            <ul>
+                <li><b>실험 구조:</b> 총 4개의 세션이 진행되며, 각 세션은 10라운드로 구성됩니다.</li>
+                <li><b>수익 계산:</b> 판매 수익에서 구매 원가를 뺀 금액이 라운드 수익이 됩니다.
+                    <br><small>(판매가 12,000원 고정 / 팔리지 않은 재고는 0원 처리)</small></li>
+                <li><b>조건 변화:</b> 각 세션마다 상품의 <b>원가</b>와 <b>수요 발생 범위</b>가 달라집니다.</li>
+                <li><b>AI 추천:</b> 매 라운드 챗봇 버튼을 눌러 AI의 추천 수량을 확인할 수 있습니다.</li>
+            </ul>
         </div>
-        <button class="submit-btn" onclick="startExperiment()">실험 시작</button>
+        
+        <div style="margin-top: 10px;">
+            <label style="display:block; font-weight:bold; margin-bottom:8px;">피실험자 고유 코드 (Subject ID):</label>
+            <input type="text" id="subject-id" placeholder="코드(학번)를 입력하세요">
+        </div>
+
+        <button class="submit-btn" onclick="startExperiment()" style="margin-top:25px;">지침을 이해했습니다. 실험 시작</button>
     </div>
 
     <div id="experiment-section" style="display: none;">
@@ -41,24 +69,31 @@
             <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
             <div>ROUND <span id="current-round-display">1</span>/10 | 누적 수익: <span id="total-profit">0</span>원</div>
         </div>
+        
         <div class="main-container">
             <div class="card">
                 <h3>Decision Panel</h3>
+                
                 <div id="ai-area">
-                    <button id="ai-ask-btn" class="submit-btn ai-btn" onclick="revealAIAdvice()">🤖 Chatbot 추천 확인 (5초 소요)</button>
+                    <button id="ai-ask-btn" class="submit-btn ai-btn" onclick="revealAIAdvice()">🤖 Chatbot에게 세션 전략 묻기 (5초)</button>
                     <div id="ai-content" class="ai-advice-box" style="display:none;">
-                        <div id="ai-loading" style="font-weight:bold; color:var(--ai-color);">
-                            <span id="loading-text">시장 데이터를 불러오는 중</span><span class="loading-dots"></span>
+                        <div id="ai-loading">
+                            <span id="loading-text" style="font-weight:bold; color:var(--ai-color);">과거 데이터를 분석하는 중</span><span class="loading-dots"></span>
                         </div>
                         <div id="ai-result" style="display:none;">
-                            <div style="color:var(--ai-color); font-weight:bold; font-size:1.1rem;">AI 추천량: <span id="ai-prediction">-</span>개</div>
-                            <div id="ai-reason-text" style="font-size:0.85rem; margin-top:8px; color:#666; line-height:1.4;"></div>
+                            <div style="color:var(--ai-color); font-weight:bold; font-size:1.1rem; margin-bottom:5px;">AI 추천 주문량: <span id="ai-prediction">-</span>개</div>
+                            <div id="ai-reason-text" style="font-size:0.88rem; color:#4b5563; line-height:1.5;"></div>
                         </div>
                     </div>
                 </div>
-                <input type="number" id="order-qty" placeholder="주문량 입력" style="width:100%; padding:15px; font-size:1.2rem; margin: 15px 0; border:2px solid #e5e7eb; border-radius:8px;">
-                <button class="submit-btn" id="btn-submit" onclick="submitOrder()">주문 제출</button>
+
+                <div style="margin-top: 10px;">
+                    <label style="display:block; font-weight:bold; margin-bottom:8px;">이번 라운드 주문 수량:</label>
+                    <input type="number" id="order-qty" placeholder="숫자만 입력">
+                </div>
+                <button class="submit-btn" id="btn-submit" onclick="submitOrder()">주문 제출 (Submit)</button>
             </div>
+
             <div class="card">
                 <div class="chart-container"><canvas id="demandChart"></canvas></div>
                 <div style="overflow-y:auto; height:200px; border-top:1px solid #eee;">
@@ -76,11 +111,11 @@
 
         let subjectId = "", currentSession = 1, currentRoundInSession = 1, totalRoundCount = 1;
         const roundsPerSession = 10, totalSessions = 4;
-        let cost, optimalQ, minD, maxD, totalProfit = 0;
+        let cost, optimalQ, minD, maxD, sessionAiReason = "", totalProfit = 0;
         const localDataLog = [];
 
+        // 세션별 환경 설정 (세션당 1회 호출)
         function updateEnvironment() {
-            // 요구사항: Cost 3천/9천/3천/9천 & Demand 100/100/500/500
             const costs = [3000, 9000, 3000, 9000];
             const dists = [{min:1, max:100}, {min:1, max:100}, {min:300, max:500}, {min:300, max:500}];
             
@@ -88,8 +123,10 @@
             minD = dists[currentSession - 1].min;
             maxD = dists[currentSession - 1].max;
             
+            // 3. 챗봇 결과 세션 단위로 고정
             const criticalRatio = (12000 - cost) / 12000;
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
+            sessionAiReason = `이 세션의 원가는 <b>${cost.toLocaleString()}원</b>이며 수요는 <b>${minD}~${maxD}</b> 사이에서 발생합니다. 통계적 최적화에 따른 추천량은 <b>${optimalQ}개</b>입니다.`;
             
             document.getElementById('header-cost').innerText = cost.toLocaleString();
             document.getElementById('header-dist').innerText = `U[${minD}, ${maxD}]`;
@@ -98,7 +135,7 @@
 
         function startExperiment() {
             subjectId = document.getElementById('subject-id').value.trim();
-            if (!subjectId) return alert("ID를 입력하세요.");
+            if (!subjectId) return alert("피실험자 코드를 입력해주세요.");
             document.getElementById('instruction-section').style.display = 'none';
             document.getElementById('experiment-section').style.display = 'block';
             updateEnvironment();
@@ -107,14 +144,17 @@
         }
 
         function generateNewScenario() {
+            // 매 라운드 실제 수요만 새로 생성
             const actualDemand = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
             window.currentScenario = { ai: optimalQ, actual: actualDemand };
             
+            // 라운드마다 챗봇 버튼은 다시 노출 (확인 필요하므로)
             document.getElementById('ai-ask-btn').style.display = 'block';
             document.getElementById('ai-content').style.display = 'none';
             document.getElementById('ai-result').style.display = 'none';
             document.getElementById('ai-loading').style.display = 'block';
-            document.getElementById('loading-text').innerText = "시장 데이터를 불러오는 중"; // 멘트 초기화
+            document.getElementById('loading-text').innerText = "시장 데이터를 분석하는 중";
+            
             document.getElementById('order-qty').value = '';
             document.getElementById('current-round-display').innerText = currentRoundInSession;
         }
@@ -123,23 +163,22 @@
             document.getElementById('ai-ask-btn').style.display = 'none';
             document.getElementById('ai-content').style.display = 'flex';
             
-            // 1단계 로딩 (2.5초)
             setTimeout(() => {
-                document.getElementById('loading-text').innerText = "과거 수요 분포 분석 및 최적화 중";
+                document.getElementById('loading-text').innerText = "해당 세션의 최적 재고 수준 산출 중";
             }, 2500);
 
-            // 2단계 완료 (총 5초)
             setTimeout(() => {
                 document.getElementById('ai-loading').style.display = 'none';
                 document.getElementById('ai-result').style.display = 'block';
-                document.getElementById('ai-prediction').innerText = window.currentScenario.ai;
-                document.getElementById('ai-reason-text').innerHTML = `현재 세션의 원가 및 수요 범위를 분석한 결과,<br>이론적 최적 주문량은 <b>${window.currentScenario.ai}개</b>입니다.`;
+                document.getElementById('ai-prediction').innerText = optimalQ; // 세션 고정값
+                document.getElementById('ai-reason-text').innerHTML = sessionAiReason; // 세션 고정문구
             }, 5000);
         }
 
         function submitOrder() {
-            const qty = parseInt(document.getElementById('order-qty').value);
-            if (isNaN(qty) || qty < 0) return alert("수량을 입력하세요.");
+            const qtyInput = document.getElementById('order-qty');
+            const qty = parseInt(qtyInput.value);
+            if (isNaN(qty) || qty < 0) return alert("올바른 수량을 입력하세요.");
 
             const demand = window.currentScenario.actual;
             const profit = (Math.min(qty, demand) * 12000) - (qty * cost);
@@ -147,66 +186,4 @@
 
             localDataLog.push({
                 subject_id: subjectId, session_number: currentSession, round_in_session: currentRoundInSession,
-                total_round: totalRoundCount, cost: cost, ai_recommendation: window.currentScenario.ai,
-                user_order: qty, actual_demand: demand, profit: profit, accumulated_profit: totalProfit
-            });
-
-            const row = `<tr><td>${currentSession}</td><td>${currentRoundInSession}</td><td>${window.currentScenario.ai}</td><td>${qty}</td><td>${demand}</td><td>${profit.toLocaleString()}</td></tr>`;
-            document.getElementById('history-table-body').insertAdjacentHTML('afterbegin', row);
-            document.getElementById('total-profit').innerText = totalProfit.toLocaleString();
-
-            if (currentRoundInSession < roundsPerSession) {
-                currentRoundInSession++; totalRoundCount++;
-                document.getElementById('progress-bar').style.width = (totalRoundCount / 40 * 100) + "%";
-                generateNewScenario(); drawChart();
-            } else if (currentSession < totalSessions) {
-                alert(`세션 ${currentSession} 종료! 다음 세션은 환경이 변합니다.`);
-                currentSession++; currentRoundInSession = 1; totalRoundCount++;
-                updateEnvironment(); generateNewScenario(); drawChart();
-            } else {
-                saveAllDataToSupabase();
-            }
-        }
-
-        async function saveAllDataToSupabase() {
-            const btn = document.getElementById('btn-submit');
-            btn.innerText = "저장 중..."; btn.disabled = true;
-            const { error } = await _supabase.from('experiment_results').insert(localDataLog);
-            if (error) { alert("오류: " + error.message); btn.disabled = false; }
-            else { alert("✅ 실험 종료. 모든 데이터가 저장되었습니다."); }
-        }
-
-        function drawChart() {
-            const canvas = document.getElementById('demandChart');
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width = canvas.parentElement.clientWidth;
-            const h = canvas.height = canvas.parentElement.clientHeight;
-            const pad = 35;
-            const maxY = maxD > 100 ? 550 : 110; // 세션에 따라 Y축 스케일 조정
-            const xStep = (w - pad * 2) / 39;
-            const getY = (v) => h - pad - (v / maxY * (h - pad * 2));
-
-            ctx.clearRect(0, 0, w, h);
-            ctx.strokeStyle = "#eee";
-            ctx.fillStyle = "#999"; ctx.font = "10px Arial";
-            for(let v=0; v<=maxY; v+=(maxY/5)) {
-                const y = getY(v);
-                ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w-pad, y); ctx.stroke();
-                ctx.fillText(Math.round(v), 5, y+4);
-            }
-            if (localDataLog.length === 0) return;
-            const drawL = (key, col, dash) => {
-                ctx.beginPath(); ctx.strokeStyle = col; ctx.setLineDash(dash ? [5, 5] : []);
-                localDataLog.forEach((d, i) => {
-                    const x = pad + (i * xStep), y = getY(d[key]);
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-            };
-            drawL('actual_demand', "#1f2937", false);
-            drawL('ai_recommendation', "#7c3aed", true);
-            drawL('user_order', "#2563eb", false);
-        }
-    </script>
-</body>
-</html>
+                total
