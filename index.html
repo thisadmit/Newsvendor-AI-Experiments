@@ -65,12 +65,12 @@
                 <li><b>실험 구조:</b> 총 4개의 세션이 진행되며, 각 세션은 10라운드로 구성됩니다.</li>
                 <li><b>수익 계산:</b> 판매 수익에서 구매 원가를 뺀 금액이 라운드 수익이 됩니다. <br><small>(판매가 12,000원 고정 / 팔리지 않은 재고는 0원 처리)</small></li>
                 <li><b>조건 변화:</b> 각 세션마다 상품의 <b>원가</b>와 <b>수요 발생 범위</b>가 달라집니다.</li>
-                <li><b>AI 추천:</b> 매 세션 시작 시 ai를 통해 추천 수량을 확인할 수 있습니다. 한번 확인한 추천은 해당 세션 내내 유지됩니다.</li>
+                <li><b>AI 추천:</b> 매 세션 시작 시 AI를 통해 추천 수량을 확인할 수 있습니다. 한번 확인한 추천은 해당 세션 내내 유지됩니다.</li>
             </ul>
         </div>
         <div style="margin-top: 10px;">
             <label style="display:block; font-weight:bold; margin-bottom:8px;">피실험자 고유 코드 (Subject ID):</label>
-            <input type="text" id="subject-id" placeholder="ID를 입력하고 Enter를 누르세요.">
+            <input type="text" id="subject-id" placeholder="고유 코드(학번)을 입력하고 Enter를 누르세요.">
         </div>
         <button class="submit-btn" id="start-btn">지침을 이해했습니다. 실험 시작</button>
     </div>
@@ -99,7 +99,8 @@
                 <div style="margin-top: 10px;">
                     <label style="display:block; font-weight:bold; margin-bottom:8px;">이번 라운드 주문 수량:</label>
                     <input type="number" id="order-qty" placeholder="수량 입력">
-                    <div id="warning-msg"></div> </div>
+                    <div id="warning-msg"></div>
+                </div>
                 <button class="submit-btn" id="btn-submit">주문 제출 (Submit)</button>
             </div>
             <div class="card">
@@ -125,11 +126,20 @@
             try {
                 _supabase = supabase.createClient('https://rrbiyvcjtqvdfhudagnk.supabase.co', 'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV');
             } catch(e) { console.error("Supabase 로드 실패:", e); }
+
             document.getElementById('start-btn').onclick = startExperiment;
             document.getElementById('ai-ask-btn').onclick = revealAIAdvice;
             document.getElementById('btn-submit').onclick = submitOrder;
-            document.getElementById('subject-id').onkeypress = (e) => { if(e.key === 'Enter') startExperiment(); };
-            document.getElementById('order-qty').onkeypress = (e) => { if(e.key === 'Enter') submitOrder(); };
+
+            // ID 입력창 엔터: 수치 체크 없이 실험 시작
+            document.getElementById('subject-id').onkeypress = (e) => { 
+                if(e.key === 'Enter') startExperiment(); 
+            };
+            
+            // 주문창 엔터: 수치 체크 후 주문 제출
+            document.getElementById('order-qty').onkeypress = (e) => { 
+                if(e.key === 'Enter') submitOrder(); 
+            };
         });
 
         function updateEnvironment() {
@@ -140,7 +150,7 @@
             maxD = dists[currentSession - 1].max;
             const criticalRatio = (price - cost) / price;
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
-            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}/b>입니다. 1) 확률적 데이터 분석 결과 ... 2) 수익 중심 분석결과, 수익을 극대화하기 위한 .... 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
+            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD}</b>입니다. 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
             isAiRevealedThisSession = false;
             resetAiUI();
             document.getElementById('header-cost').innerText = cost.toLocaleString();
@@ -195,19 +205,18 @@
             }, 5000);
         }
 
-        // [추가] 범위 이탈 경고 표시 함수
         function showWarning(text) {
             const warningEl = document.getElementById('warning-msg');
             warningEl.innerText = text;
             warningEl.style.opacity = "1";
-            setTimeout(() => { warningEl.style.opacity = "0"; }, 3000); // 3초 후 사라짐
+            setTimeout(() => { warningEl.style.opacity = "0"; }, 3000);
         }
 
         function submitOrder() {
             const qtyInput = document.getElementById('order-qty');
             const qty = parseInt(qtyInput.value);
             
-            // [수정] 범위 이탈 체크 로직
+            // 실제 주문 제출 시에만 범위 체크 로직 작동
             if (isNaN(qty) || qty < 0) {
                 showWarning("올바른 숫자를 입력하세요.");
                 qtyInput.focus();
@@ -247,11 +256,13 @@
             const oldDist = distTexts[currentSession-1], newDist = distTexts[currentSession];
             const costBox = document.getElementById('cost-box');
             const distBox = document.getElementById('dist-box');
+
             if(oldCost === newCost) {
                 costBox.innerHTML = `<span class="no-change">변화 없음 (${newCost.toLocaleString()}원)</span>`;
             } else {
                 costBox.innerHTML = `<span class="old-val">${oldCost.toLocaleString()}원</span><span class="arrow">➔</span><span class="new-val">${newCost.toLocaleString()}원</span>`;
             }
+
             if(oldDist === newDist) {
                 distBox.innerHTML = `<span class="no-change">변화 없음 (${newDist})</span>`;
             } else {
