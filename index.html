@@ -128,7 +128,7 @@
             document.getElementById('ai-ask-btn').onclick = revealAIAdvice;
             document.getElementById('btn-submit').onclick = submitOrder;
 
-            // [추가] Subject ID 입력창에서 Enter 키 지원
+            // [수정] Subject ID 입력창에서 Enter 키 지원
             document.getElementById('subject-id').onkeypress = (e) => { if(e.key === 'Enter') startExperiment(); };
             
             // 주문 입력창에서 Enter 키 지원
@@ -143,7 +143,7 @@
             maxD = dists[currentSession - 1].max;
             const criticalRatio = (price - cost) / price;
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
-            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD}</b>입니다. 통계적 분석 및 수익 최대화 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
+            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD}</b>입니다. 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
             isAiRevealedThisSession = false;
             resetAiUI();
             document.getElementById('header-cost').innerText = cost.toLocaleString();
@@ -189,7 +189,7 @@
             isAiRevealedThisSession = true; 
             document.getElementById('ai-ask-btn').style.display = 'none';
             document.getElementById('ai-content').style.display = 'flex';
-            setTimeout(() => { document.getElementById('loading-text').innerText = "해당 세션의 최적 수준 산출 중"; }, 2500);
+            setTimeout(() => { document.getElementById('loading-text').innerText = "해당 세션의 최적 주문 수준 산출 중"; }, 2500);
             setTimeout(() => {
                 document.getElementById('ai-loading').style.display = 'none';
                 document.getElementById('ai-result').style.display = 'block';
@@ -264,26 +264,58 @@
             const w = canvas.width = canvas.parentElement.clientWidth;
             const h = canvas.height = canvas.parentElement.clientHeight;
             const pad = 35;
-            const maxY = maxD > 100 ? 550 : 110; 
             const xStep = (w - pad * 2) / 39;
-            const getY = (v) => h - pad - (v / maxY * (h - pad * 2));
+
             ctx.clearRect(0, 0, w, h);
+
+            // [수정] 세션별 배경색 칠하기
+            const sessionColors = ["#f8fafc", "#ffffff", "#f8fafc", "#ffffff"];
+            for (let i = 0; i < 4; i++) {
+                ctx.fillStyle = sessionColors[i];
+                ctx.fillRect(pad + (i * 10 * xStep), 0, 10 * xStep, h);
+            }
+
+            // [수정] 이중 스케일 로직
+            const getY = (val, session) => {
+                let currentMaxY = (session <= 2) ? 120 : 550;
+                let currentMinY = (session <= 2) ? 0 : 250; // 세션 3,4는 하단 여백 확보
+                return h - pad - ((val - currentMinY) / (currentMaxY - currentMinY) * (h - pad * 2));
+            };
+
+            // Grid & Labels (세션에 따라 동적으로 표시)
             ctx.strokeStyle = "#eee";
             ctx.fillStyle = "#999"; ctx.font = "10px Arial";
-            for(let v=0; v<=maxY; v+=(maxY/5)) {
-                const y = getY(v);
-                ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w-pad, y); ctx.stroke();
-                ctx.fillText(Math.round(v), 5, y+4);
+            
+            // 왼쪽 Y축 (세션 1,2용 0-100)
+            for(let v=0; v<=100; v+=50) {
+                let y = getY(v, 1);
+                ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + 20 * xStep, y); ctx.stroke();
+                ctx.fillText(v, 5, y+4);
             }
+
+            // 오른쪽 Y축 (세션 3,4용 300-500)
+            for(let v=300; v<=500; v+=100) {
+                let y = getY(v, 3);
+                ctx.beginPath(); ctx.moveTo(pad + 20 * xStep, y); ctx.lineTo(w-pad, y); ctx.stroke();
+                ctx.fillText(v, w-pad+5, y+4);
+            }
+
             if (localDataLog.length === 0) return;
+
+            // 데이터 선 그리기
             const drawL = (key, col, dash) => {
                 ctx.beginPath(); ctx.strokeStyle = col; ctx.setLineDash(dash ? [5, 5] : []);
                 localDataLog.forEach((d, i) => {
-                    const x = pad + (i * xStep), y = getY(d[key]);
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                    const x = pad + (i * xStep);
+                    const y = getY(d[key], d.session_number);
+                    
+                    // 세션이 바뀌는 지점(11, 21, 31라운드)에서는 선을 끊거나 새로 시작
+                    if (i === 0 || i === 10 || i === 20 || i === 30) ctx.moveTo(x, y); 
+                    else ctx.lineTo(x, y);
                 });
                 ctx.stroke();
             };
+
             drawL('actual_demand', "#1f2937", false);
             drawL('ai_recommendation', "#7c3aed", true);
             drawL('user_order', "#2563eb", false);
