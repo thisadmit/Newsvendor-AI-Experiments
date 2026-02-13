@@ -299,17 +299,18 @@
                 ctx.fillRect(pad + (i * 10 * xStep), 0, 10 * xStep, h);
             }
 
-            // [추가] 세션 2와 3 사이 굵은 구분선 (수요 변화 알림)
+            // [수정] 세션 2와 3 사이 구분 점선 (Dash Line)
             if (currentSession >= 3) {
                 ctx.beginPath();
-                ctx.strokeStyle = "#333"; // 진한 검회색
-                ctx.lineWidth = 3;        // 두껍게
-                ctx.setLineDash([]);      // 실선
+                ctx.strokeStyle = "#333"; 
+                ctx.lineWidth = 2;        
+                ctx.setLineDash([5, 5]); // 점선 설정 (5px 선, 5px 공백)
                 const xLine = pad + 20 * xStep;
                 ctx.moveTo(xLine, 0);
                 ctx.lineTo(xLine, h - pad);
                 ctx.stroke();
-                ctx.lineWidth = 1;        // 다시 기본값 복구
+                ctx.setLineDash([]);      // 이후 다른 선들을 위해 점선 해제
+                ctx.lineWidth = 1;
             }
 
             const getY = (val, session) => {
