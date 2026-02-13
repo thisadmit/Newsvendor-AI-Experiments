@@ -37,8 +37,8 @@
         .old-val { color: #94a3b8; text-decoration: line-through; font-size: 1.1rem; }
         .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
         /* 변화 없음 멘트용 중앙 정렬 스타일 */
-        .no-change-wrapper { width: 100%; display: flex; justify-content: center; align-items: center; }
-        .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; text-align: center; }
+        .no-change-wrapper { width: 100%; display: flex; justify-content: center; align-items: center; text-align: center; }
+        .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; }
         .arrow { font-size: 1.5rem; color: #cbd5e1; }
     </style>
 </head>
@@ -52,14 +52,14 @@
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">💰 원가(Cost) 변화</div>
             <div class="change-item" id="cost-change-box">
                 <span class="old-val" id="old-cost"></span>
-                <span class="arrow">➔</span>
+                <span class="arrow" id="cost-arrow">➔</span>
                 <span class="new-val" id="new-cost"></span>
             </div>
 
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">📈 수요 범위(Demand) 변화</div>
             <div class="change-item" id="dist-change-box">
                 <span class="old-val" id="old-dist"></span>
-                <span class="arrow">➔</span>
+                <span class="arrow" id="dist-arrow">➔</span>
                 <span class="new-val" id="new-dist"></span>
             </div>
 
@@ -76,7 +76,7 @@
                 <li><b>수익 계산:</b> 판매 수익에서 구매 원가를 뺀 금액이 라운드 수익이 됩니다.
                     <br><small>(판매가 12,000원 고정 / 팔리지 않은 재고는 0원 처리)</small></li>
                 <li><b>조건 변화:</b> 각 세션마다 상품의 <b>원가</b>와 <b>수요 발생 범위</b>가 달라집니다.</li>
-                <li><b>AI 추천:</b> 매 라운드 챗봇 버튼을 눌러 AI의 추천 수량을 확인할 수 있습니다. 한번 확인한 추천은 해당 세션 내내 유지됩니다.</li>
+                <li><b>AI 추천:</b> 매 세션 시작 시 챗봇 버튼을 눌러 AI의 추천 수량을 확인할 수 있습니다. 한번 확인한 추천은 해당 세션 내내 유지됩니다.</li>
             </ul>
         </div>
         <div style="margin-top: 10px;">
@@ -96,7 +96,7 @@
             <div class="card">
                 <h3>Decision Panel</h3>
                 <div id="ai-area">
-                    <button id="ai-ask-btn" class="submit-btn ai-btn">🤖 AI에게 세션 전략 묻기 (5초)</button>
+                    <button id="ai-ask-btn" class="submit-btn ai-btn">🤖 AI에게 세션 전략 묻기</button>
                     <div id="ai-content" class="ai-advice-box" style="display:none;">
                         <div id="ai-loading">
                             <span id="loading-text" style="font-weight:bold; color:var(--ai-color);">데이터를 분석하는 중</span><span class="loading-dots"></span>
@@ -243,6 +243,7 @@
             }
         }
 
+        // [수정된 함수] 변화없음 문구가 완벽하게 가운데 정렬되도록 화살표 display 속성을 제어함
         function showSessionModal() {
             const costs = [3000, 9000, 3000, 9000];
             const distTexts = ["U[1, 100]", "U[1, 100]", "U[300, 500]", "U[300, 500]"];
@@ -252,26 +253,26 @@
             const oldCost = costs[currentSession-1], newCost = costs[currentSession];
             const oldDist = distTexts[currentSession-1], newDist = distTexts[currentSession];
 
-            // 원가 비교 및 중앙 정렬 적용
+            // 원가 비교
             if(oldCost === newCost) {
                 document.getElementById('old-cost').innerText = "";
+                document.getElementById('cost-arrow').style.display = "none"; // 화살표 제거
                 document.getElementById('new-cost').innerHTML = `<div class="no-change-wrapper"><span class="no-change">변화 없음 (${newCost.toLocaleString()}원)</span></div>`;
-                document.querySelector("#cost-change-box .arrow").style.display = "none";
             } else {
                 document.getElementById('old-cost').innerText = oldCost.toLocaleString() + "원";
+                document.getElementById('cost-arrow').style.display = "inline"; // 화살표 복구
                 document.getElementById('new-cost').innerText = newCost.toLocaleString() + "원";
-                document.querySelector("#cost-change-box .arrow").style.display = "inline";
             }
 
-            // 수요 비교 및 중앙 정렬 적용
+            // 수요 비교
             if(oldDist === newDist) {
                 document.getElementById('old-dist').innerText = "";
+                document.getElementById('dist-arrow').style.display = "none"; // 화살표 제거
                 document.getElementById('new-dist').innerHTML = `<div class="no-change-wrapper"><span class="no-change">변화 없음 (${newDist})</span></div>`;
-                document.querySelector("#dist-change-box .arrow").style.display = "none";
             } else {
                 document.getElementById('old-dist').innerText = oldDist;
+                document.getElementById('dist-arrow').style.display = "inline"; // 화살표 복구
                 document.getElementById('new-dist').innerText = newDist;
-                document.querySelector("#dist-change-box .arrow").style.display = "inline";
             }
 
             document.getElementById('session-modal').style.display = 'flex';
