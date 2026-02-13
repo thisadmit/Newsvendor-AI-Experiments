@@ -153,7 +153,7 @@
             
             const criticalRatio = (price - cost) / price;
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
-            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD}</b>입니다. 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
+            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD}</b>입니다. 1) 확률적 분석 결과... 2) 수익 중심 분석결과 수익을 최대화 하기 위한.... 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
             
             isAiRevealedThisSession = false;
             resetAiUI();
