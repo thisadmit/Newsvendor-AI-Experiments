@@ -65,7 +65,7 @@
                 <li><b>실험 구조:</b> 총 4개의 세션이 진행되며, 각 세션은 10라운드로 구성됩니다.</li>
                 <li><b>수익 계산:</b> 판매 수익에서 구매 원가를 뺀 금액이 라운드 수익이 됩니다. <br><small>(판매가 12,000원 고정 / 팔리지 않은 재고는 0원 처리)</small></li>
                 <li><b>조건 변화:</b> 각 세션마다 상품의 <b>원가</b>와 <b>수요 발생 범위</b>가 달라집니다.</li>
-                <li><b>AI 추천:</b> 매 세션 시작 시 AI를 통해 추천 수량을 확인할 수 있습니다. 한번 확인한 추천은 해당 세션 내내 유지됩니다.</li>
+                <li><b>AI 추천:</b> 매 세션 시작 시 AI를 통해 전략을 묻는 챗봇을 활용할 수 있습니다. 한번 확인한 추천은 해당 세션 내내 유지됩니다.</li>
             </ul>
         </div>
         <div style="margin-top: 10px;">
@@ -131,17 +131,13 @@
             document.getElementById('ai-ask-btn').onclick = revealAIAdvice;
             document.getElementById('btn-submit').onclick = submitOrder;
 
-            // 전체 창에 대한 엔터 키 리스너 (세션 전환 모달용)
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     const modal = document.getElementById('session-modal');
-                    if (modal.style.display === 'flex') {
-                        closeModal();
-                    }
+                    if (modal.style.display === 'flex') closeModal();
                 }
             });
 
-            // 입력 필드 전용 리스너
             document.getElementById('subject-id').onkeypress = (e) => { if(e.key === 'Enter') startExperiment(); };
             document.getElementById('order-qty').onkeypress = (e) => { if(e.key === 'Enter') submitOrder(); };
         });
@@ -271,7 +267,7 @@
                 distBox.innerHTML = `<span class="old-val">${oldDist}</span><span class="arrow">➔</span><span class="new-val">${newDist}</span>`;
             }
             document.getElementById('session-modal').style.display = 'flex';
-            document.getElementById('modal-confirm-btn').focus(); // 버튼에 포커스 줘서 엔터 즉시 작동 유도
+            document.getElementById('modal-confirm-btn').focus();
         }
 
         function closeModal() {
@@ -296,16 +292,32 @@
             const pad = 35;
             const xStep = (w - pad * 2) / 39;
             ctx.clearRect(0, 0, w, h);
+
             const sessionColors = ["#f8fafc", "#ffffff", "#f8fafc", "#ffffff"];
             for (let i = 0; i < currentSession; i++) {
                 ctx.fillStyle = sessionColors[i];
                 ctx.fillRect(pad + (i * 10 * xStep), 0, 10 * xStep, h);
             }
+
+            // [추가] 세션 2와 3 사이 굵은 구분선 (수요 변화 알림)
+            if (currentSession >= 3) {
+                ctx.beginPath();
+                ctx.strokeStyle = "#333"; // 진한 검회색
+                ctx.lineWidth = 3;        // 두껍게
+                ctx.setLineDash([]);      // 실선
+                const xLine = pad + 20 * xStep;
+                ctx.moveTo(xLine, 0);
+                ctx.lineTo(xLine, h - pad);
+                ctx.stroke();
+                ctx.lineWidth = 1;        // 다시 기본값 복구
+            }
+
             const getY = (val, session) => {
                 let currentMaxY = (session <= 2) ? 120 : 550;
                 let currentMinY = (session <= 2) ? 0 : 250;
                 return h - pad - ((val - currentMinY) / (currentMaxY - currentMinY) * (h - pad * 2));
             };
+
             ctx.strokeStyle = "#eee"; ctx.fillStyle = "#999"; ctx.font = "10px Arial";
             for(let v=0; v<=100; v+=50) {
                 let y = getY(v, 1);
