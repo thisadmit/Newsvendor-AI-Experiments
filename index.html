@@ -5,14 +5,18 @@
     <title>Newsvendor AI Experiment</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --ai-color: #7c3aed; }
+        :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --ai-color: #7c3aed; --error-color: #ef4444; }
         * { box-sizing: border-box; }
         body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Layout */
         .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .progress-container { flex-grow: 1; margin: 0 20px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
         .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Elements */
         .instruction-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 15px 0; line-height: 1.6; font-size: 0.95rem; }
         .ai-advice-box { border: 2px solid #ddd6fe; background: #f5f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; min-height: 120px; display: flex; flex-direction: column; justify-content: center; text-align: center; }
         input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
@@ -20,9 +24,16 @@
         .ai-btn { background: var(--ai-color); margin-bottom: 10px; }
         .loading-dots:after { content: ' .'; animation: dots 1.5s steps(5, end) infinite; }
         @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } 80%, 100% { content: ''; } }
+        
+        /* Warning Message */
+        #warning-msg { color: var(--error-color); font-size: 0.85rem; font-weight: bold; margin-top: 5px; min-height: 1.2rem; transition: opacity 0.3s; opacity: 0; }
+
+        /* Chart & Table */
         .chart-container { flex-grow: 1; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px; min-height: 250px; position: relative; }
         table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
         th, td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
+
+        /* Modal Styles */
         #session-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
         .modal-content { background-color: #fff; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; }
         .change-item { display: flex; justify-content: space-around; align-items: center; margin: 15px 0; padding: 15px; background: #f9fafb; border-radius: 12px; min-height: 60px; }
@@ -54,12 +65,12 @@
                 <li><b>실험 구조:</b> 총 4개의 세션이 진행되며, 각 세션은 10라운드로 구성됩니다.</li>
                 <li><b>수익 계산:</b> 판매 수익에서 구매 원가를 뺀 금액이 라운드 수익이 됩니다. <br><small>(판매가 12,000원 고정 / 팔리지 않은 재고는 0원 처리)</small></li>
                 <li><b>조건 변화:</b> 각 세션마다 상품의 <b>원가</b>와 <b>수요 발생 범위</b>가 달라집니다.</li>
-                <li><b>AI 추천:</b> 매 세션 시작 시 AI 도움을 통해 추천 주문량을 확인할 수 있습니다. 한번 확인한 추천은 해당 세션 내내 유지됩니다.</li>
+                <li><b>AI 추천:</b> 매 세션 시작 시 ai를 통해 추천 수량을 확인할 수 있습니다. 한번 확인한 추천은 해당 세션 내내 유지됩니다.</li>
             </ul>
         </div>
         <div style="margin-top: 10px;">
             <label style="display:block; font-weight:bold; margin-bottom:8px;">피실험자 고유 코드 (Subject ID):</label>
-            <input type="text" id="subject-id" placeholder="고유 코드(학번)을 입력하고 enter를 누르세요.">
+            <input type="text" id="subject-id" placeholder="ID를 입력하고 Enter를 누르세요.">
         </div>
         <button class="submit-btn" id="start-btn">지침을 이해했습니다. 실험 시작</button>
     </div>
@@ -88,7 +99,7 @@
                 <div style="margin-top: 10px;">
                     <label style="display:block; font-weight:bold; margin-bottom:8px;">이번 라운드 주문 수량:</label>
                     <input type="number" id="order-qty" placeholder="수량 입력">
-                </div>
+                    <div id="warning-msg"></div> </div>
                 <button class="submit-btn" id="btn-submit">주문 제출 (Submit)</button>
             </div>
             <div class="card">
@@ -129,7 +140,7 @@
             maxD = dists[currentSession - 1].max;
             const criticalRatio = (price - cost) / price;
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
-            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD}</b>입니다. 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
+            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}원</b>이며 수요 범위는 <b>${minD}~${maxD            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()            sessionAiReason = `현재 세션 원가는 <b>${cost.toLocaleString()}/b>입니다. 1) 확률적 데이터 분석 결과 ... 2) 수익 중심 분석결과, 수익을 극대화하기 위한 .... 최적 주문량은 <b>${optimalQ}개</b>입니다.`;
             isAiRevealedThisSession = false;
             resetAiUI();
             document.getElementById('header-cost').innerText = cost.toLocaleString();
@@ -184,9 +195,30 @@
             }, 5000);
         }
 
+        // [추가] 범위 이탈 경고 표시 함수
+        function showWarning(text) {
+            const warningEl = document.getElementById('warning-msg');
+            warningEl.innerText = text;
+            warningEl.style.opacity = "1";
+            setTimeout(() => { warningEl.style.opacity = "0"; }, 3000); // 3초 후 사라짐
+        }
+
         function submitOrder() {
-            const qty = parseInt(document.getElementById('order-qty').value);
-            if (isNaN(qty) || qty < 0) return alert("수량을 입력하세요.");
+            const qtyInput = document.getElementById('order-qty');
+            const qty = parseInt(qtyInput.value);
+            
+            // [수정] 범위 이탈 체크 로직
+            if (isNaN(qty) || qty < 0) {
+                showWarning("올바른 숫자를 입력하세요.");
+                qtyInput.focus();
+                return;
+            }
+            if (qty < minD || qty > maxD) {
+                showWarning(`범위를 벗어났습니다. (${minD} ~ ${maxD} 사이 입력 권장)`);
+                qtyInput.focus();
+                return;
+            }
+
             const demand = window.currentScenario.actual;
             const profit = (Math.min(qty, demand) * price) - (qty * cost);
             totalProfit += profit;
@@ -242,7 +274,6 @@
             else { alert("✅ 모든 데이터가 저장되었습니다. 실험이 종료되었습니다."); }
         }
 
-        // [수정] 렌더링 로직: 현재 세션까지만 배경 및 축을 표시함
         function drawChart() {
             const canvas = document.getElementById('demandChart');
             const ctx = canvas.getContext('2d');
@@ -250,32 +281,23 @@
             const h = canvas.height = canvas.parentElement.clientHeight;
             const pad = 35;
             const xStep = (w - pad * 2) / 39;
-
             ctx.clearRect(0, 0, w, h);
-
-            // 현재 진행 중인 세션까지만 배경색 칠하기 (미래 세션은 숨김)
             const sessionColors = ["#f8fafc", "#ffffff", "#f8fafc", "#ffffff"];
             for (let i = 0; i < currentSession; i++) {
                 ctx.fillStyle = sessionColors[i];
                 ctx.fillRect(pad + (i * 10 * xStep), 0, 10 * xStep, h);
             }
-
             const getY = (val, session) => {
                 let currentMaxY = (session <= 2) ? 120 : 550;
                 let currentMinY = (session <= 2) ? 0 : 250;
                 return h - pad - ((val - currentMinY) / (currentMaxY - currentMinY) * (h - pad * 2));
             };
-
             ctx.strokeStyle = "#eee"; ctx.fillStyle = "#999"; ctx.font = "10px Arial";
-            
-            // 왼쪽 Y축: 세션 1 시작 시점부터 상시 노출
             for(let v=0; v<=100; v+=50) {
                 let y = getY(v, 1);
                 ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + 20 * xStep, y); ctx.stroke();
                 ctx.fillText(v, 5, y+4);
             }
-
-            // 오른쪽 Y축: 세션 3 진입 전까지는 숨김 처리
             if (currentSession >= 3) {
                 for(let v=300; v<=500; v+=100) {
                     let y = getY(v, 3);
@@ -283,9 +305,7 @@
                     ctx.fillText(v, w-pad+5, y+4);
                 }
             }
-
             if (localDataLog.length === 0) return;
-
             const drawL = (key, col, dash) => {
                 ctx.beginPath(); ctx.strokeStyle = col; ctx.setLineDash(dash ? [5, 5] : []);
                 localDataLog.forEach((d, i) => {
@@ -296,7 +316,6 @@
                 });
                 ctx.stroke();
             };
-
             drawL('actual_demand', "#1f2937", false);
             drawL('ai_recommendation', "#7c3aed", true);
             drawL('user_order', "#2563eb", false);
