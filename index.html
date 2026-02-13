@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Newsvendor Experiment</title>
+    <title>Newsvendor AI Experiment</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --ai-color: #7c3aed; }
@@ -12,46 +12,80 @@
         .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
         .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
-        .ai-advice-box { border: 2px solid #ddd6fe; background: #f5f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; position: relative; }
-        .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; }
+        
+        /* AI Advice Box Styles */
+        .ai-advice-box { border: 2px solid #ddd6fe; background: #f5f3ff; padding: 20px; border-radius: 8px; margin-bottom: 20px; min-height: 100px; display: flex; flex-direction: column; justify-content: center; }
+        .loading-dots:after { content: ' .'; animation: dots 1.5s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } 80%, 100% { content: ''; } }
+        
+        .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
+        .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .ai-btn { background: var(--ai-color); margin-bottom: 10px; }
+        
+        .input-group { margin: 15px 0; }
+        .input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .input-group input { width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 6px; box-sizing: border-box; }
+        
         .chart-container { flex-grow: 1; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px; min-height: 250px; position: relative; }
+        table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+        th { background: #f9fafb; position: sticky; top: 0; padding: 8px; }
+        td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
     </style>
 </head>
 <body>
 
     <div id="instruction-section" class="card" style="max-width: 700px; margin: 50px auto;">
         <h2>실험 안내</h2>
-        <p>재고 관리 담당자로서 15라운드 동안 의사결정을 수행합니다.</p>
-        <div style="background: #eff6ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
-            <p>💰 판매가: 12,000원</p>
-            <p>📦 원가: <b id="display-cost">-</b>원</p>
-            <p>📈 수요분포: U [1, 100]</p>
-            <p> 테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.테스트입니다.</p>
+        <p>재고 관리 담당자로서 총 4개의 세션(세션당 10라운드, 총 40라운드) 동안 의사결정을 수행합니다. 각 세션마다 비용 조건이 달라질 수 있습니다.</p>
+        
+        <div class="input-group">
+            <label for="subject-id">피실험자 고유 코드 입력:</label>
+            <input type="text" id="subject-id" placeholder="예: S001" required>
         </div>
-        <button class="submit-btn" onclick="startExperiment()">이해했습니다. 실험 시작</button>
+
+        <div style="background: #eff6ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <p>💰 판매가: 12,000원 (고정)</p>
+            <p>📈 수요분포: 매 라운드 변화</p>
+            <p>🤖 매 라운드 AI의 추천을 확인한 후 주문량을 결정할 수 있습니다.</p>
+        </div>
+        <button class="submit-btn" onclick="startExperiment()">실험 시작하기</button>
     </div>
 
     <div id="experiment-section" style="display: none;">
         <div class="header">
-            <div>원가: <b id="header-cost">0</b>원 | 분포: <b>U[1,100]</b></div>
+            <div>세션: <b id="current-session">1</b>/4 | 원가: <b id="header-cost">0</b>원</div>
             <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
-            <div>ROUND <span id="current-round">1</span>/15 | 누적 수익: <span id="total-profit">0</span>원</div>
+            <div>ROUND <span id="current-round-display">1</span>/10 | 누적 수익: <span id="total-profit">0</span>원</div>
         </div>
         <div class="main-container">
             <div class="card">
                 <h3>Decision Panel</h3>
-                <div class="ai-advice-box">
-                    <div style="color:var(--ai-color); font-weight:bold; font-size:1.1rem;">AI 추천량: <span id="ai-prediction">-</span>개</div>
-                    <div id="ai-reason-text" style="font-size:0.9rem; margin-top:8px; color:#666;">...</div>
+                
+                <div id="ai-area">
+                    <button id="ai-ask-btn" class="submit-btn ai-btn" onclick="revealAIAdvice()">🤖 Chatbot에게 추천받기</button>
+                    <div id="ai-content" class="ai-advice-box" style="display:none;">
+                        <div id="ai-loading" style="text-align:center; font-weight:bold; color:var(--ai-color);">
+                            <span class="loading-dots">AI가 시장 데이터를 분석 중입니다</span>
+                        </div>
+                        <div id="ai-result" style="display:none;">
+                            <div style="color:var(--ai-color); font-weight:bold; font-size:1.1rem;">AI 추천량: <span id="ai-prediction">-</span>개</div>
+                            <div id="ai-reason-text" style="font-size:0.9rem; margin-top:8px; color:#666;"></div>
+                        </div>
+                    </div>
                 </div>
-                <input type="number" id="order-qty" placeholder="주문량 입력 (Enter 가능)" style="width:100%; padding:15px; font-size:1.2rem; margin-bottom:15px; border-radius:8px; border:2px solid #e5e7eb;">
+
+                <div class="input-group">
+                    <label>주문량 결정:</label>
+                    <input type="number" id="order-qty" placeholder="수량 입력 후 Enter" style="font-size:1.2rem;">
+                </div>
                 <button class="submit-btn" id="btn-submit" onclick="submitOrder()">주문 제출 (Submit)</button>
             </div>
+
             <div class="card">
                 <div class="chart-container"><canvas id="demandChart"></canvas></div>
                 <div style="overflow-y:auto; height:200px; border-top:1px solid #eee;">
-                    <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
-                        <thead><tr style="background:#f9fafb;"><th>Rnd</th><th>AI</th><th>나</th><th>수요</th><th>수익</th></tr></thead>
+                    <table id="history-table">
+                        <thead><tr><th>Session</th><th>Rnd</th><th>AI</th><th>나</th><th>수요</th><th>수익</th></tr></thead>
                         <tbody id="history-table-body"></tbody>
                     </table>
                 </div>
@@ -60,45 +94,75 @@
     </div>
 
     <script>
-        const _supabase = supabase.createClient('https://rrbiyvcjtqvdfhudagnk.supabase.co', 'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV');
+        const _supabase = supabase.createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_KEY');
 
-        // 1. 실험 설정 및 조건 배정
+        // 실험 상태 변수
+        let subjectId = "";
         const price = 12000;
-        const cost = Math.random() < 0.5 ? 3000 : 9000;
-        const criticalRatio = (price - cost) / (price - 0);
-        const optimalQ = Math.round(1 + (100 - 1) * criticalRatio);
-        const sessionId = crypto.randomUUID();
-
-        let currentRound = 1;
-        const maxRounds = 15;
-        let totalProfit = 0;
+        let currentSession = 1;
+        let currentRoundInSession = 1;
+        let totalRoundCount = 1;
+        const roundsPerSession = 10;
+        const totalSessions = 4;
         
-        // **중요: 로컬 데이터 저장소**
+        let cost, criticalRatio, optimalQ, demandRange;
+        let totalProfit = 0;
         const localDataLog = [];
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const pid = urlParams.get('prolific_pid') || "test_" + Math.random().toString(36).substr(2, 5);
-
-        window.onload = () => { document.getElementById('display-cost').innerText = cost.toLocaleString(); };
+        // 4. 세션별 환경 설정 (라운드마다 다르게 하고 싶다면 generateNewScenario 내에서 조절 가능)
+        function updateEnvironment() {
+            // 예시: 세션별로 원가를 다르게 설정 (3000, 6000, 9000, 4500 등)
+            const costs = [3000, 9000, 4000, 8000];
+            cost = costs[currentSession - 1];
+            demandRange = { min: 1, max: 100 };
+            
+            criticalRatio = (price - cost) / price;
+            optimalQ = Math.round(demandRange.min + (demandRange.max - demandRange.min) * criticalRatio);
+            
+            document.getElementById('header-cost').innerText = cost.toLocaleString();
+            document.getElementById('current-session').innerText = currentSession;
+        }
 
         function startExperiment() {
+            subjectId = document.getElementById('subject-id').value.trim();
+            if (!subjectId) return alert("고유 코드를 입력해주세요.");
+
             document.getElementById('instruction-section').style.display = 'none';
             document.getElementById('experiment-section').style.display = 'block';
-            document.getElementById('header-cost').innerText = cost.toLocaleString();
+            
+            updateEnvironment();
             generateNewScenario();
             drawChart();
         }
 
-        // Enter 키 이벤트
-        document.getElementById('order-qty').addEventListener('keypress', (e) => { if(e.key === 'Enter') submitOrder(); });
-
         function generateNewScenario() {
-            const actual = Math.floor(Math.random() * 100) + 1;
-            document.getElementById('ai-prediction').innerText = optimalQ;
-            document.getElementById('ai-reason-text').innerText = `Critical Ratio(${Math.round(criticalRatio*100)}%)를 고려한 이론적 최적 주문량은 ${optimalQ}개입니다.<br>테스트입니다.테스트입니다.테스트입니다.테스트입니다.<br>테스트입니다.테스트입니다.테스트입니다.`;
-            window.currentScenario = { ai: optimalQ, actual: actual };
-            const input = document.getElementById('order-qty');
-            input.value = ''; input.focus();
+            // 매 라운드 새로운 수요 생성
+            const actualDemand = Math.floor(Math.random() * (demandRange.max - demandRange.min + 1)) + demandRange.min;
+            window.currentScenario = { ai: optimalQ, actual: actualDemand };
+            
+            // 초기화: AI 추천 숨기기
+            document.getElementById('ai-ask-btn').style.display = 'block';
+            document.getElementById('ai-content').style.display = 'none';
+            document.getElementById('ai-result').style.display = 'none';
+            document.getElementById('ai-loading').style.display = 'block';
+            
+            document.getElementById('order-qty').value = '';
+            document.getElementById('order-qty').focus();
+            document.getElementById('current-round-display').innerText = currentRoundInSession;
+        }
+
+        // 3. AI 추천 로직 (5초 지연)
+        function revealAIAdvice() {
+            document.getElementById('ai-ask-btn').style.display = 'none';
+            document.getElementById('ai-content').style.display = 'flex';
+            
+            setTimeout(() => {
+                document.getElementById('ai-loading').style.display = 'none';
+                document.getElementById('ai-result').style.display = 'block';
+                document.getElementById('ai-prediction').innerText = window.currentScenario.ai;
+                document.getElementById('ai-reason-text').innerHTML = 
+                    `현재 원가(${cost.toLocaleString()}원)를 기반으로 산출된<br>최적 임계치(Critical Ratio)는 ${Math.round(criticalRatio*100)}%입니다.<br>이 수치를 적용한 추천 수량은 ${window.currentScenario.ai}개입니다.`;
+            }, 5000); // 5초 대기
         }
 
         function submitOrder() {
@@ -109,40 +173,56 @@
             const profit = (Math.min(qty, demand) * price) - (qty * cost);
             totalProfit += profit;
 
-            // **매 라운드 데이터를 로컬 배열에 push**
+            // 데이터 기록 (subject_id 포함)
             localDataLog.push({
-                session_id: sessionId,
-                prolific_id: pid,
-                round_number: currentRound,
+                subject_id: subjectId,
+                session_number: currentSession,
+                round_in_session: currentRoundInSession,
+                total_round: totalRoundCount,
                 cost: cost,
-                critical_ratio: criticalRatio,
                 ai_recommendation: window.currentScenario.ai,
                 user_order: qty,
                 actual_demand: demand,
-                round_profit: profit,
-                total_profit_so_far: totalProfit
+                profit: profit,
+                accumulated_profit: totalProfit,
+                timestamp: new Date().toISOString()
             });
 
             updateUI(qty, demand, profit);
-            drawChart();
-
-            if (currentRound < maxRounds) {
-                currentRound++;
-                document.getElementById('current-round').innerText = currentRound;
-                document.getElementById('progress-bar').style.width = ((currentRound-1)/maxRounds*100) + "%";
+            
+            // 라운드 및 세션 관리
+            if (currentRoundInSession < roundsPerSession) {
+                currentRoundInSession++;
+                totalRoundCount++;
+                document.getElementById('progress-bar').style.width = (totalRoundCount / (totalSessions * roundsPerSession) * 100) + "%";
                 generateNewScenario();
+                drawChart();
+            } else if (currentSession < totalSessions) {
+                alert(`세션 ${currentSession}이 종료되었습니다. 확인을 누르면 다음 세션을 시작합니다.`);
+                currentSession++;
+                currentRoundInSession = 1;
+                totalRoundCount++;
+                updateEnvironment();
+                generateNewScenario();
+                drawChart();
             } else {
                 saveAllDataToSupabase();
             }
         }
 
         function updateUI(qty, demand, profit) {
-            const row = `<tr><td>${currentRound}</td><td>${optimalQ}</td><td>${qty}</td><td>${demand}</td><td>${profit.toLocaleString()}</td></tr>`;
+            const row = `<tr>
+                <td>${currentSession}</td>
+                <td>${currentRoundInSession}</td>
+                <td>${window.currentScenario.ai}</td>
+                <td>${qty}</td>
+                <td>${demand}</td>
+                <td>${profit.toLocaleString()}</td>
+            </tr>`;
             document.getElementById('history-table-body').insertAdjacentHTML('afterbegin', row);
             document.getElementById('total-profit').innerText = totalProfit.toLocaleString();
         }
 
-        // **15라운드 종료 시 한꺼번에 전송하는 함수**
         async function saveAllDataToSupabase() {
             const btn = document.getElementById('btn-submit');
             btn.innerText = "데이터 저장 중...";
@@ -154,22 +234,23 @@
                 alert("저장 오류: " + error.message);
                 btn.disabled = false;
             } else {
-                alert("✅ 모든 데이터가 성공적으로 저장되었습니다.");
-                // window.location.href = "PROLIFIC_REDIRECT_URL";
+                alert("✅ 모든 실험이 완료되었습니다. 감사합니다!");
+                // window.location.href = "FINISH_PAGE_URL";
             }
         }
 
+        // 차트 드로잉 (전체 라운드 흐름 시각화)
         function drawChart() {
             const canvas = document.getElementById('demandChart');
             const ctx = canvas.getContext('2d');
             const w = canvas.width = canvas.parentElement.clientWidth;
             const h = canvas.height = canvas.parentElement.clientHeight;
             const pad = 40;
-            const xStep = (w - pad * 2) / (maxRounds - 1);
-            const getY = (v) => h - pad - (v / 110 * (h - pad * 2));
+            const totalRounds = totalSessions * roundsPerSession;
+            const xStep = (w - pad * 2) / (totalRounds - 1);
+            const getY = (v) => h - pad - (v / 120 * (h - pad * 2));
 
             ctx.clearRect(0, 0, w, h);
-            // Grid
             ctx.strokeStyle = "#eee";
             for(let v=0; v<=100; v+=20) {
                 const y = getY(v);
@@ -177,6 +258,7 @@
                 ctx.fillStyle="#999"; ctx.font="10px Arial"; ctx.fillText(v, 10, y+4);
             }
             if (localDataLog.length === 0) return;
+            
             const drawLine = (key, color, isDash=false) => {
                 ctx.beginPath(); ctx.strokeStyle = color; ctx.setLineDash(isDash ? [5, 5] : []);
                 localDataLog.forEach((d, i) => {
@@ -189,6 +271,8 @@
             drawLine('ai_recommendation', "#7c3aed", true);
             drawLine('user_order', "#2563eb");
         }
+
+        document.getElementById('order-qty').addEventListener('keypress', (e) => { if(e.key === 'Enter') submitOrder(); });
     </script>
 </body>
 </html>
