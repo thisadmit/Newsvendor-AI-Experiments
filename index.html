@@ -37,7 +37,7 @@
         /* Toggle & Comments inside Table */
         .ai-comment-row { background-color: #f5f3ff; display: none; }
         .ai-comment-cell { padding: 12px 20px !important; text-align: left !important; border-bottom: 2px solid #ddd6fe !important; }
-        .toggle-btn { cursor: pointer; color: var(--ai-color); font-weight: bold; border: 1px solid var(--ai-color); background: #fff; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; transition: all 0.2s; }
+        .toggle-btn { cursor: pointer; color: var(--ai-color); font-weight: bold; border: 1px solid var(--ai-color); background: #fff; padding: 3px 6px; border-radius: 6px; font-size: 0.75rem; margin-left: 5px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 3px; }
         .toggle-btn:hover { background: var(--ai-color); color: #fff; }
 
         /* 세션 Modal Styles */
@@ -48,23 +48,40 @@
         .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
         .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; width: 100%; text-align: center; }
         
-        /* [수정됨] 하단 입력/제출 영역만 덮는 '빼꼼' 팝업 스타일 */
-        #action-area { position: relative; margin-top: auto; padding-top: 15px; border-top: 2px dashed #e2e8f0; }
+        /* [수정됨] 말풍선 스타일의 팝업과 통통 튀는 애니메이션 */
         #inline-ai-popup { 
             display: none; 
             position: absolute; 
-            bottom: -5px; left: -5px; right: -5px; top: -5px; /* 액션 영역보다 살짝 더 덮기 */
-            background: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(4px);
+            bottom: 15px; /* 입력창을 가릴락 말락 하는 절묘한 위치 */
+            left: 5%; 
+            width: 90%; 
+            background: #ffffff; 
             border: 2px solid var(--ai-color);
-            border-radius: 10px;
+            border-radius: 16px;
             z-index: 100; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 15px 20px; 
+            padding: 20px 25px; 
             text-align: left; 
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.25);
+            /* 애니메이션 적용 */
+            animation: popBubble 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* 말풍선 꼬리 (오른쪽 표를 향하는 느낌) */
+        #inline-ai-popup::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: -10px;
+            border-width: 10px 0 10px 10px;
+            border-style: solid;
+            border-color: transparent transparent transparent var(--ai-color);
+            display: block;
+            width: 0;
+        }
+
+        @keyframes popBubble {
+            0% { transform: translateY(20px) scale(0.9); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
         }
     </style>
 </head>
@@ -125,18 +142,16 @@
                     </div>
                 </div>
 
-                <div id="action-area">
-                    <div>
-                        <label style="display:block; font-weight:bold; margin-bottom:8px;">이번 라운드 주문 수량:</label>
-                        <input type="number" id="order-qty" placeholder="위 정보를 바탕으로 수량 입력">
-                        <div id="warning-msg"></div>
-                    </div>
+                <div style="margin-top: auto; position: relative;">
+                    <label style="display:block; font-weight:bold; margin-bottom:8px;">이번 라운드 주문 수량:</label>
+                    <input type="number" id="order-qty" placeholder="위 정보를 바탕으로 수량 입력">
+                    <div id="warning-msg"></div>
                     <button class="submit-btn" id="btn-submit">주문 제출 (Submit)</button>
                     
                     <div id="inline-ai-popup">
-                        <div id="inline-ai-text" style="font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px; color: #333; width: 100%; overflow-y: auto;">
+                        <div id="inline-ai-text" style="font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px; color: #333;">
                             </div>
-                        <button class="submit-btn" onclick="closeAiPopup()" style="background: var(--ai-color); margin-top: auto; padding: 10px; width: 100%; font-size:1rem;">확인 및 다음 라운드 진행 (Enter)</button>
+                        <button class="submit-btn" onclick="closeAiPopup()" style="background: var(--ai-color); margin-top: 5px; padding: 10px; font-size:1rem;">확인 및 다음 라운드 진행 (Enter)</button>
                     </div>
                 </div>
             </div>
@@ -176,7 +191,7 @@
                         e.preventDefault(); 
                         closeModal();
                     }
-                    else if (inlinePopup.style.display === 'flex') {
+                    else if (inlinePopup.style.display === 'block') {
                         e.preventDefault(); 
                         closeAiPopup();
                     }
@@ -190,7 +205,7 @@
             document.getElementById('order-qty').addEventListener('keydown', (e) => {
                 if(e.key === 'Enter') {
                     const inlinePopup = document.getElementById('inline-ai-popup');
-                    if (inlinePopup.style.display !== 'flex') {
+                    if (inlinePopup.style.display !== 'block') {
                         e.preventDefault(); 
                         submitOrder();
                     }
@@ -254,9 +269,7 @@
             }
         }
 
-        // [수정됨] 3가지 Case 기반의 고도화된 AI 코멘트 생성 로직
         function getAiRoundComment(qty, demand) {
-            // 유연성을 위해 수요 범위의 5% 오차를 허용 (최소 2개)
             const tolerance = Math.max(2, Math.round((maxD - minD) * 0.05));
             
             const followedOptimal = Math.abs(qty - optimalQ) <= tolerance;
@@ -265,34 +278,30 @@
             let title = "", desc = "", ver1 = "", ver2 = "";
 
             if (followedOptimal && demandMatched) {
-                // Case 1: 최적 수량을 따르고 결과도 좋을 때
                 title = "🎯 최적 주문량 일치";
                 desc = `최적 주문량에 맞게 훌륭한 의사결정을 내리셨군요! 운 좋게 실제 수요도 비슷하게 발생하여 좋은 수익을 거두셨습니다. 외부 요인에 흔들리지 말고 계속 지금처럼 최적 주문량을 유지하는 것이 가장 좋습니다.`;
-                return `<div style="font-weight:bold; color:var(--ai-color); margin-bottom:5px;">${title}</div><div>${desc}</div>`;
+                return `<div style="font-weight:bold; color:var(--ai-color); margin-bottom:5px; font-size: 1.1rem;">${title}</div><div style="margin-bottom: 5px;">${desc}</div>`;
                 
             } else if (followedOptimal && !demandMatched) {
-                // Case 2: 최적 수량을 따랐으나 결과가 안 좋을 때 (Demo: Ver1 & Ver2 동시 표기)
                 title = "📊 합리적 결정 / 수요 빗나감";
                 desc = `최적 주문량에 기반한 합리적인 주문을 하셨지만, 이번 라운드는 실제 수요가 크게 빗나가서 아쉬우셨을 것 같습니다.`;
                 ver1 = `수식상 계산된 최적 주문량을 따라야만 최고의 누적 수익을 얻을 수 있습니다.`;
                 ver2 = `이전 라운드의 값은 독립시행이기 때문에, 그 값을 따라갈 필요가 없습니다.`;
                 
             } else {
-                // Case 3: 최적 수량을 따르지 않았을 때 (Demo: Ver1 & Ver2 동시 표기)
                 title = "⚠️ 최적 주문량 불일치";
                 desc = `이번 라운드에서는 계산된 최적 주문량(Q*)에서 다소 벗어난 수량을 주문하셨군요.`;
                 ver1 = `수식상 계산된 최적 주문량을 따라야만 최고의 누적 수익을 얻을 수 있습니다.`;
                 ver2 = `매 라운드의 값은 독립시행이기 때문에, 과거의 결과를 따라갈 필요가 없습니다.`;
             }
 
-            // Case 2, 3 출력 형태 (Ver1, Ver2 동시 표기)
             return `
-                <div style="font-weight:bold; color:var(--ai-color); margin-bottom:5px;">${title}</div>
+                <div style="font-weight:bold; color:var(--ai-color); margin-bottom:5px; font-size: 1.1rem;">${title}</div>
                 <div style="margin-bottom: 10px;">${desc}</div>
-                <div style="padding: 8px; background: #f8fafc; border-left: 3px solid #2563eb; margin-bottom: 5px; font-size: 0.85rem;">
+                <div style="padding: 6px 10px; background: #f8fafc; border-left: 3px solid #2563eb; margin-bottom: 5px; font-size: 0.85rem;">
                     <b>[Ver 1]</b> ${ver1}
                 </div>
-                <div style="padding: 8px; background: #fdf4ff; border-left: 3px solid #d946ef; font-size: 0.85rem;">
+                <div style="padding: 6px 10px; background: #fdf4ff; border-left: 3px solid #d946ef; font-size: 0.85rem;">
                     <b>[Ver 2]</b> ${ver2}
                 </div>
             `;
@@ -341,10 +350,11 @@
             const roundId = `${currentSession}-${currentRoundInSession}`;
             const aiFeedback = getAiRoundComment(qty, demand);
             
+            // [수정됨] 토글 버튼 디자인을 말풍선 아이콘 형태로 변경
             const row = `
                 <tr>
                     <td>${currentSession}</td>
-                    <td>${currentRoundInSession} <button class="toggle-btn" onclick="togglePastComment('${roundId}')">AI 피드백</button></td>
+                    <td>${currentRoundInSession} <button class="toggle-btn" onclick="togglePastComment('${roundId}')">💬 코멘트</button></td>
                     <td>${optimalQ}</td>
                     <td>${qty}</td>
                     <td>${demand}</td>
@@ -361,9 +371,9 @@
 
             drawChart();
 
-            // 액션 구역을 가리는 팝업 띄우기
+            // 말풍선 팝업 띄우기
             document.getElementById('inline-ai-text').innerHTML = aiFeedback;
-            document.getElementById('inline-ai-popup').style.display = 'flex';
+            document.getElementById('inline-ai-popup').style.display = 'block';
             
             document.getElementById('order-qty').disabled = true;
             document.getElementById('btn-submit').disabled = true;
