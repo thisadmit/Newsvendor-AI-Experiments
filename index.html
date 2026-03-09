@@ -14,12 +14,12 @@
         .progress-container { flex-grow: 1; margin: 0 20px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
         .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; position: relative; } /* position relative 추가 */
         
         /* Elements */
         .instruction-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 15px 0; line-height: 1.6; font-size: 0.95rem; }
         
-        /* Info Panel (New) */
+        /* Info Panel */
         .info-box { border: 2px solid #e2e8f0; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .info-list { margin: 10px 0 0 0; padding-left: 20px; font-size: 0.95rem; line-height: 1.6; color: #334155; }
         
@@ -40,8 +40,8 @@
         .toggle-btn { cursor: pointer; color: var(--ai-color); font-weight: bold; border: 1px solid var(--ai-color); background: #fff; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; transition: all 0.2s; }
         .toggle-btn:hover { background: var(--ai-color); color: #fff; }
 
-        /* Modal Styles */
-        #session-modal, #ai-popup-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        /* 세션 Modal Styles (전체화면) */
+        #session-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
         .modal-content { background-color: #fff; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .change-item { display: flex; justify-content: space-around; align-items: center; margin: 15px 0; padding: 15px; background: #f9fafb; border-radius: 12px; min-height: 60px; }
         .old-val { color: #94a3b8; text-decoration: line-through; font-size: 1.1rem; }
@@ -49,9 +49,22 @@
         .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; width: 100%; text-align: center; }
         .arrow { font-size: 1.5rem; color: #cbd5e1; }
         
-        /* AI Popup Modal */
-        #ai-popup-modal { z-index: 2000; }
-        #ai-popup-modal .modal-content { border: 3px solid var(--ai-color); padding: 30px; max-width: 450px; }
+        /* [수정됨] 제출 부분 덮어쓰는 인라인 팝업 스타일 */
+        #inline-ai-popup { 
+            display: none; 
+            position: absolute; 
+            bottom: 15px; /* 카드의 맨 아래 쪽에 위치 */
+            left: 20px; 
+            right: 20px; 
+            background: rgba(255, 255, 255, 0.95); /* 살짝 투명해서 뒤가 가려진 느낌 */
+            backdrop-filter: blur(5px);
+            border: 3px solid var(--ai-color); 
+            border-radius: 12px; 
+            padding: 20px; 
+            box-shadow: 0 -5px 25px rgba(0,0,0,0.15); 
+            z-index: 100; 
+            text-align: center; 
+        }
     </style>
 </head>
 <body>
@@ -65,15 +78,6 @@
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">📈 수요 범위(Demand) 변화</div>
             <div class="change-item" id="dist-box"></div>
             <button class="submit-btn" id="modal-confirm-btn" onclick="closeModal()">확인 및 다음 세션 시작 (Enter)</button>
-        </div>
-    </div>
-
-    <div id="ai-popup-modal">
-        <div class="modal-content">
-            <h2 style="color: var(--ai-color); margin-top: 0;">🤖 AI 라운드 분석</h2>
-            <div id="ai-popup-text" style="font-size: 1.1rem; line-height: 1.6; margin: 20px 0; color: #333; word-break: keep-all;">
-                </div>
-            <button class="submit-btn" onclick="closeAiPopup()" style="background: var(--ai-color);">확인 및 다음 라운드 진행 (Enter)</button>
         </div>
     </div>
 
@@ -101,7 +105,7 @@
             <div>ROUND <span id="current-round-display">1</span>/10 | 누적 수익: <span id="total-profit">0</span>원</div>
         </div>
         <div class="main-container">
-            <div class="card">
+            <div class="card" id="decision-panel">
                 <h3>Decision Panel</h3>
                 
                 <div id="info-area" class="info-box">
@@ -128,6 +132,13 @@
                     <div id="warning-msg"></div>
                 </div>
                 <button class="submit-btn" id="btn-submit">주문 제출 (Submit)</button>
+                
+                <div id="inline-ai-popup">
+                    <h3 style="color: var(--ai-color); margin-top: 0; margin-bottom: 15px;">🤖 라운드 피드백</h3>
+                    <div id="inline-ai-text" style="font-size: 1.05rem; line-height: 1.5; margin-bottom: 20px; color: #333; word-break: keep-all;">
+                        </div>
+                    <button class="submit-btn" onclick="closeAiPopup()" style="background: var(--ai-color); margin-top: 0; padding: 12px;">확인 및 다음 라운드 진행 (Enter)</button>
+                </div>
             </div>
             
             <div class="card">
@@ -156,17 +167,17 @@
             document.getElementById('start-btn').onclick = startExperiment;
             document.getElementById('btn-submit').onclick = submitOrder;
 
-            // Enter 키 겹침 버그 방지
+            // Enter 키 조작 처리
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     const sessionModal = document.getElementById('session-modal');
-                    const aiPopupModal = document.getElementById('ai-popup-modal');
+                    const inlinePopup = document.getElementById('inline-ai-popup');
                     
                     if (sessionModal.style.display === 'flex') {
                         e.preventDefault(); 
                         closeModal();
                     }
-                    else if (aiPopupModal.style.display === 'flex') {
+                    else if (inlinePopup.style.display === 'block') {
                         e.preventDefault(); 
                         closeAiPopup();
                     }
@@ -179,8 +190,8 @@
 
             document.getElementById('order-qty').addEventListener('keydown', (e) => {
                 if(e.key === 'Enter') {
-                    const aiPopupModal = document.getElementById('ai-popup-modal');
-                    if (aiPopupModal.style.display !== 'flex') {
+                    const inlinePopup = document.getElementById('inline-ai-popup');
+                    if (inlinePopup.style.display !== 'block') {
                         e.preventDefault(); 
                         submitOrder();
                     }
@@ -195,17 +206,15 @@
             minD = dists[currentSession - 1].min;
             maxD = dists[currentSession - 1].max;
             
-            const cu = price - cost; // 기회 손실
-            const co = cost;         // 재고 손실
+            const cu = price - cost; 
+            const co = cost;         
             const criticalRatio = cu / (cu + co);
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
             
-            // 헤더 정보 업데이트
             document.getElementById('header-cost').innerText = cost.toLocaleString();
             document.getElementById('header-dist').innerText = `U[${minD}, ${maxD}]`;
             document.getElementById('current-session').innerText = currentSession;
 
-            // Info Panel 내용 업데이트
             document.getElementById('info-cost').innerText = cost.toLocaleString();
             document.getElementById('info-cu').innerText = cu.toLocaleString();
             document.getElementById('info-co').innerText = co.toLocaleString();
@@ -238,7 +247,6 @@
             setTimeout(() => { warningEl.style.opacity = "0"; }, 3000);
         }
 
-        // 토글 버튼을 눌렀을 때 과거 코멘트를 보여주거나 숨기는 함수
         function togglePastComment(id) {
             const row = document.getElementById(`comment-${id}`);
             if (row.style.display === 'none' || row.style.display === '') {
@@ -261,7 +269,8 @@
         }
 
         function closeAiPopup() {
-            document.getElementById('ai-popup-modal').style.display = 'none';
+            // 오버레이 팝업 닫기 및 버튼 활성화
+            document.getElementById('inline-ai-popup').style.display = 'none';
             document.getElementById('order-qty').disabled = false;
             document.getElementById('btn-submit').disabled = false;
 
@@ -303,7 +312,6 @@
             const roundId = `${currentSession}-${currentRoundInSession}`;
             const aiFeedback = getAiRoundComment(qty, demand);
             
-            // 데이터 행과 숨겨진 코멘트 행을 함께 추가 (토글 버튼 포함)
             const row = `
                 <tr>
                     <td>${currentSession}</td>
@@ -325,8 +333,11 @@
 
             drawChart();
 
-            document.getElementById('ai-popup-text').innerHTML = aiFeedback;
-            document.getElementById('ai-popup-modal').style.display = 'flex';
+            // [수정됨] 제출 영역을 덮는 인라인 팝업 띄우기
+            document.getElementById('inline-ai-text').innerHTML = aiFeedback;
+            document.getElementById('inline-ai-popup').style.display = 'block';
+            
+            // 입력창과 제출버튼 비활성화 (뒤에 눌리지 않도록)
             document.getElementById('order-qty').disabled = true;
             document.getElementById('btn-submit').disabled = true;
         }
