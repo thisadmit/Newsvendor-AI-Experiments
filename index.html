@@ -350,6 +350,12 @@
             const roundId = `${currentSession}-${currentRoundInSession}`;
             const aiFeedback = getAiRoundComment(qty, demand);
             
+            // 새 코멘트를 추가하기 전에 표에 열려있는 이전 라운드 코멘트들을 모두 닫기 처리
+            const allComments = document.querySelectorAll('.ai-comment-row');
+            allComments.forEach(comment => {
+                comment.style.display = 'none';
+            });
+            
             const row = `
                 <tr>
                     <td>${currentSession}</td>
