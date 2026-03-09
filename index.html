@@ -14,13 +14,13 @@
         .progress-container { flex-grow: 1; margin: 0 20px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
         .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; position: relative; } /* position relative 추가 */
+        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; } 
         
         /* Elements */
         .instruction-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 15px 0; line-height: 1.6; font-size: 0.95rem; }
         
         /* Info Panel */
-        .info-box { border: 2px solid #e2e8f0; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .info-box { border: 2px solid #e2e8f0; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
         .info-list { margin: 10px 0 0 0; padding-left: 20px; font-size: 0.95rem; line-height: 1.6; color: #334155; }
         
         input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
@@ -40,30 +40,31 @@
         .toggle-btn { cursor: pointer; color: var(--ai-color); font-weight: bold; border: 1px solid var(--ai-color); background: #fff; padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; transition: all 0.2s; }
         .toggle-btn:hover { background: var(--ai-color); color: #fff; }
 
-        /* 세션 Modal Styles (전체화면) */
+        /* 세션 Modal Styles */
         #session-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
         .modal-content { background-color: #fff; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .change-item { display: flex; justify-content: space-around; align-items: center; margin: 15px 0; padding: 15px; background: #f9fafb; border-radius: 12px; min-height: 60px; }
         .old-val { color: #94a3b8; text-decoration: line-through; font-size: 1.1rem; }
         .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
         .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; width: 100%; text-align: center; }
-        .arrow { font-size: 1.5rem; color: #cbd5e1; }
         
-        /* [수정됨] 제출 부분 덮어쓰는 인라인 팝업 스타일 */
+        /* [수정됨] 하단 입력/제출 영역만 덮는 '빼꼼' 팝업 스타일 */
+        #action-area { position: relative; margin-top: auto; padding-top: 15px; border-top: 2px dashed #e2e8f0; }
         #inline-ai-popup { 
             display: none; 
             position: absolute; 
-            bottom: 15px; /* 카드의 맨 아래 쪽에 위치 */
-            left: 20px; 
-            right: 20px; 
-            background: rgba(255, 255, 255, 0.95); /* 살짝 투명해서 뒤가 가려진 느낌 */
-            backdrop-filter: blur(5px);
-            border: 3px solid var(--ai-color); 
-            border-radius: 12px; 
-            padding: 20px; 
-            box-shadow: 0 -5px 25px rgba(0,0,0,0.15); 
+            bottom: -5px; left: -5px; right: -5px; top: -5px; /* 액션 영역보다 살짝 더 덮기 */
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(4px);
+            border: 2px solid var(--ai-color);
+            border-radius: 10px;
             z-index: 100; 
-            text-align: center; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 15px 20px; 
+            text-align: left; 
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -106,38 +107,37 @@
         </div>
         <div class="main-container">
             <div class="card" id="decision-panel">
-                <h3>Decision Panel</h3>
+                <h3 style="margin-top:0;">Decision Panel</h3>
                 
                 <div id="info-area" class="info-box">
                     <h4 style="margin: 0 0 5px 0; color: #1e293b;">📊 현재 시장 환경 정보</h4>
                     <ul class="info-list">
                         <li><b>판매가 (Price):</b> 12,000원</li>
                         <li><b>원가 (Cost):</b> <span id="info-cost">0</span>원</li>
-                        <li><b>기회 손실 (C<sub>u</sub>):</b> <span id="info-cu" style="color:#d97706; font-weight:bold;">0</span>원 <br><small style="color:#64748b;">(판매가 - 원가 : 수요를 놓쳐 잃은 개당 이익)</small></li>
-                        <li><b>재고 손실 (C<sub>o</sub>):</b> <span id="info-co" style="color:var(--error-color); font-weight:bold;">0</span>원 <br><small style="color:#64748b;">(원가 : 팔리지 않고 버려지는 개당 비용)</small></li>
-                        <li><b>수요 분포:</b> <span id="info-dist">U[?, ?]</span></li>
+                        <li><b>기회 손실 (C<sub>u</sub>):</b> <span id="info-cu" style="color:#d97706; font-weight:bold;">0</span>원 <br><small style="color:#64748b;">(수요를 놓쳐 잃은 개당 이익)</small></li>
+                        <li><b>재고 손실 (C<sub>o</sub>):</b> <span id="info-co" style="color:var(--error-color); font-weight:bold;">0</span>원 <br><small style="color:#64748b;">(팔리지 않고 버려지는 개당 비용)</small></li>
                     </ul>
-                    <div style="margin-top: 15px; padding: 12px; background: #e0e7ff; border-radius: 8px; font-size: 0.9rem; color: #1e3a8a;">
-                        <b>💡 뉴스벤더 최적화 공식</b><br>
-                        최적 주문량(Q*)은 다음 누적확률을 만족하는 지점입니다.<br>
-                        <div style="text-align: center; margin-top: 5px; font-weight: bold; font-family: monospace; font-size: 1.05rem;">
+                    <div style="margin-top: 15px; padding: 10px; background: #e0e7ff; border-radius: 8px; font-size: 0.85rem; color: #1e3a8a;">
+                        <b>💡 최적 주문량(Q*) 공식</b><br>
+                        <div style="text-align: center; margin-top: 5px; font-weight: bold; font-family: monospace; font-size: 1rem;">
                             P(수요 &le; Q*) = C<sub>u</sub> / (C<sub>u</sub> + C<sub>o</sub>)
                         </div>
                     </div>
                 </div>
 
-                <div style="margin-top: 10px;">
-                    <label style="display:block; font-weight:bold; margin-bottom:8px;">이번 라운드 주문 수량:</label>
-                    <input type="number" id="order-qty" placeholder="위 정보를 바탕으로 수량 입력">
-                    <div id="warning-msg"></div>
-                </div>
-                <button class="submit-btn" id="btn-submit">주문 제출 (Submit)</button>
-                
-                <div id="inline-ai-popup">
-                    <h3 style="color: var(--ai-color); margin-top: 0; margin-bottom: 15px;">🤖 라운드 피드백</h3>
-                    <div id="inline-ai-text" style="font-size: 1.05rem; line-height: 1.5; margin-bottom: 20px; color: #333; word-break: keep-all;">
-                        </div>
-                    <button class="submit-btn" onclick="closeAiPopup()" style="background: var(--ai-color); margin-top: 0; padding: 12px;">확인 및 다음 라운드 진행 (Enter)</button>
+                <div id="action-area">
+                    <div>
+                        <label style="display:block; font-weight:bold; margin-bottom:8px;">이번 라운드 주문 수량:</label>
+                        <input type="number" id="order-qty" placeholder="위 정보를 바탕으로 수량 입력">
+                        <div id="warning-msg"></div>
+                    </div>
+                    <button class="submit-btn" id="btn-submit">주문 제출 (Submit)</button>
+                    
+                    <div id="inline-ai-popup">
+                        <div id="inline-ai-text" style="font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px; color: #333; width: 100%; overflow-y: auto;">
+                            </div>
+                        <button class="submit-btn" onclick="closeAiPopup()" style="background: var(--ai-color); margin-top: auto; padding: 10px; width: 100%; font-size:1rem;">확인 및 다음 라운드 진행 (Enter)</button>
+                    </div>
                 </div>
             </div>
             
@@ -167,7 +167,6 @@
             document.getElementById('start-btn').onclick = startExperiment;
             document.getElementById('btn-submit').onclick = submitOrder;
 
-            // Enter 키 조작 처리
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     const sessionModal = document.getElementById('session-modal');
@@ -177,7 +176,7 @@
                         e.preventDefault(); 
                         closeModal();
                     }
-                    else if (inlinePopup.style.display === 'block') {
+                    else if (inlinePopup.style.display === 'flex') {
                         e.preventDefault(); 
                         closeAiPopup();
                     }
@@ -191,7 +190,7 @@
             document.getElementById('order-qty').addEventListener('keydown', (e) => {
                 if(e.key === 'Enter') {
                     const inlinePopup = document.getElementById('inline-ai-popup');
-                    if (inlinePopup.style.display !== 'block') {
+                    if (inlinePopup.style.display !== 'flex') {
                         e.preventDefault(); 
                         submitOrder();
                     }
@@ -218,7 +217,6 @@
             document.getElementById('info-cost').innerText = cost.toLocaleString();
             document.getElementById('info-cu').innerText = cu.toLocaleString();
             document.getElementById('info-co').innerText = co.toLocaleString();
-            document.getElementById('info-dist').innerText = `균등분포 U[${minD}, ${maxD}]`;
         }
 
         function startExperiment() {
@@ -256,20 +254,51 @@
             }
         }
 
+        // [수정됨] 3가지 Case 기반의 고도화된 AI 코멘트 생성 로직
         function getAiRoundComment(qty, demand) {
-            if (qty === demand) {
-                return `정확히 수요(${demand}개)와 일치하게 주문하셨습니다! 완벽한 예측입니다.`;
-            } else if (qty > demand) {
-                const over = qty - demand;
-                return `수요(${demand}개)보다 <b>${over}개 많이</b> 주문하셨습니다.<br><span style="color:var(--error-color); font-size:0.95rem;">남은 재고로 인한 원가 손실(과잉 재고)이 발생했습니다.</span>`;
+            // 유연성을 위해 수요 범위의 5% 오차를 허용 (최소 2개)
+            const tolerance = Math.max(2, Math.round((maxD - minD) * 0.05));
+            
+            const followedOptimal = Math.abs(qty - optimalQ) <= tolerance;
+            const demandMatched = Math.abs(qty - demand) <= tolerance;
+
+            let title = "", desc = "", ver1 = "", ver2 = "";
+
+            if (followedOptimal && demandMatched) {
+                // Case 1: 최적 수량을 따르고 결과도 좋을 때
+                title = "🎯 최적 주문량 일치";
+                desc = `최적 주문량에 맞게 훌륭한 의사결정을 내리셨군요! 운 좋게 실제 수요도 비슷하게 발생하여 좋은 수익을 거두셨습니다. 외부 요인에 흔들리지 말고 계속 지금처럼 최적 주문량을 유지하는 것이 가장 좋습니다.`;
+                return `<div style="font-weight:bold; color:var(--ai-color); margin-bottom:5px;">${title}</div><div>${desc}</div>`;
+                
+            } else if (followedOptimal && !demandMatched) {
+                // Case 2: 최적 수량을 따랐으나 결과가 안 좋을 때 (Demo: Ver1 & Ver2 동시 표기)
+                title = "📊 합리적 결정 / 수요 빗나감";
+                desc = `최적 주문량에 기반한 합리적인 주문을 하셨지만, 이번 라운드는 실제 수요가 크게 빗나가서 아쉬우셨을 것 같습니다.`;
+                ver1 = `수식상 계산된 최적 주문량을 따라야만 최고의 누적 수익을 얻을 수 있습니다.`;
+                ver2 = `이전 라운드의 값은 독립시행이기 때문에, 그 값을 따라갈 필요가 없습니다.`;
+                
             } else {
-                const under = demand - qty;
-                return `수요(${demand}개)보다 <b>${under}개 적게</b> 주문하셨습니다.<br><span style="color:#d97706; font-size:0.95rem;">더 팔 수 있었는데 기회를 놓쳤습니다. (기회 손실)</span>`;
+                // Case 3: 최적 수량을 따르지 않았을 때 (Demo: Ver1 & Ver2 동시 표기)
+                title = "⚠️ 최적 주문량 불일치";
+                desc = `이번 라운드에서는 계산된 최적 주문량(Q*)에서 다소 벗어난 수량을 주문하셨군요.`;
+                ver1 = `수식상 계산된 최적 주문량을 따라야만 최고의 누적 수익을 얻을 수 있습니다.`;
+                ver2 = `매 라운드의 값은 독립시행이기 때문에, 과거의 결과를 따라갈 필요가 없습니다.`;
             }
+
+            // Case 2, 3 출력 형태 (Ver1, Ver2 동시 표기)
+            return `
+                <div style="font-weight:bold; color:var(--ai-color); margin-bottom:5px;">${title}</div>
+                <div style="margin-bottom: 10px;">${desc}</div>
+                <div style="padding: 8px; background: #f8fafc; border-left: 3px solid #2563eb; margin-bottom: 5px; font-size: 0.85rem;">
+                    <b>[Ver 1]</b> ${ver1}
+                </div>
+                <div style="padding: 8px; background: #fdf4ff; border-left: 3px solid #d946ef; font-size: 0.85rem;">
+                    <b>[Ver 2]</b> ${ver2}
+                </div>
+            `;
         }
 
         function closeAiPopup() {
-            // 오버레이 팝업 닫기 및 버튼 활성화
             document.getElementById('inline-ai-popup').style.display = 'none';
             document.getElementById('order-qty').disabled = false;
             document.getElementById('btn-submit').disabled = false;
@@ -323,7 +352,6 @@
                 </tr>
                 <tr id="comment-${roundId}" class="ai-comment-row">
                     <td colspan="6" class="ai-comment-cell">
-                        <span style="color:var(--ai-color); font-weight:bold; font-size:1.1rem; margin-right:8px;">🤖</span> 
                         <span style="font-size:0.95rem; color:#333; line-height:1.5;">${aiFeedback}</span>
                     </td>
                 </tr>
@@ -333,11 +361,10 @@
 
             drawChart();
 
-            // [수정됨] 제출 영역을 덮는 인라인 팝업 띄우기
+            // 액션 구역을 가리는 팝업 띄우기
             document.getElementById('inline-ai-text').innerHTML = aiFeedback;
-            document.getElementById('inline-ai-popup').style.display = 'block';
+            document.getElementById('inline-ai-popup').style.display = 'flex';
             
-            // 입력창과 제출버튼 비활성화 (뒤에 눌리지 않도록)
             document.getElementById('order-qty').disabled = true;
             document.getElementById('btn-submit').disabled = true;
         }
