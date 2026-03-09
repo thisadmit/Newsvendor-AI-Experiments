@@ -48,11 +48,11 @@
         .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
         .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; width: 100%; text-align: center; }
         
-        /* [수정됨] 말풍선 스타일의 팝업과 통통 튀는 애니메이션 */
+        /* 말풍선 스타일의 팝업과 통통 튀는 애니메이션 */
         #inline-ai-popup { 
             display: none; 
             position: absolute; 
-            bottom: 15px; /* 입력창을 가릴락 말락 하는 절묘한 위치 */
+            bottom: 15px; 
             left: 5%; 
             width: 90%; 
             background: #ffffff; 
@@ -62,11 +62,9 @@
             padding: 20px 25px; 
             text-align: left; 
             box-shadow: 0 10px 30px rgba(124, 58, 237, 0.25);
-            /* 애니메이션 적용 */
             animation: popBubble 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* 말풍선 꼬리 (오른쪽 표를 향하는 느낌) */
         #inline-ai-popup::after {
             content: '';
             position: absolute;
@@ -350,7 +348,7 @@
             const roundId = `${currentSession}-${currentRoundInSession}`;
             const aiFeedback = getAiRoundComment(qty, demand);
             
-            // [수정됨] 토글 버튼 디자인을 말풍선 아이콘 형태로 변경
+            // [수정됨] 방금 추가된 라운드는 무조건 코멘트가 펼쳐진 상태(style="display: table-row;")로 표에 들어갑니다.
             const row = `
                 <tr>
                     <td>${currentSession}</td>
@@ -360,7 +358,7 @@
                     <td>${demand}</td>
                     <td>${profit.toLocaleString()}</td>
                 </tr>
-                <tr id="comment-${roundId}" class="ai-comment-row">
+                <tr id="comment-${roundId}" class="ai-comment-row" style="display: table-row;">
                     <td colspan="6" class="ai-comment-cell">
                         <span style="font-size:0.95rem; color:#333; line-height:1.5;">${aiFeedback}</span>
                     </td>
@@ -371,7 +369,6 @@
 
             drawChart();
 
-            // 말풍선 팝업 띄우기
             document.getElementById('inline-ai-text').innerHTML = aiFeedback;
             document.getElementById('inline-ai-popup').style.display = 'block';
             
