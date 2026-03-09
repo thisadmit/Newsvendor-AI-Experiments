@@ -34,13 +34,17 @@
         th, td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
 
         /* Modal Styles */
-        #session-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        #session-modal, #ai-popup-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
         .modal-content { background-color: #fff; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .change-item { display: flex; justify-content: space-around; align-items: center; margin: 15px 0; padding: 15px; background: #f9fafb; border-radius: 12px; min-height: 60px; }
         .old-val { color: #94a3b8; text-decoration: line-through; font-size: 1.1rem; }
         .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
         .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; width: 100%; text-align: center; }
         .arrow { font-size: 1.5rem; color: #cbd5e1; }
+        
+        /* AI Popup Modal (Higher z-index to stay on top) */
+        #ai-popup-modal { z-index: 2000; }
+        #ai-popup-modal .modal-content { border: 3px solid var(--ai-color); padding: 30px; max-width: 450px; }
     </style>
 </head>
 <body>
@@ -54,6 +58,15 @@
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">📈 수요 범위(Demand) 변화</div>
             <div class="change-item" id="dist-box"></div>
             <button class="submit-btn" id="modal-confirm-btn" onclick="closeModal()">확인 및 다음 세션 시작 (Enter)</button>
+        </div>
+    </div>
+
+    <div id="ai-popup-modal">
+        <div class="modal-content">
+            <h2 style="color: var(--ai-color); margin-top: 0;">🤖 AI 라운드 분석</h2>
+            <div id="ai-popup-text" style="font-size: 1.1rem; line-height: 1.6; margin: 20px 0; color: #333; word-break: keep-all;">
+                </div>
+            <button class="submit-btn" onclick="closeAiPopup()" style="background: var(--ai-color);">확인 및 다음 라운드 진행 (Enter)</button>
         </div>
     </div>
 
@@ -124,6 +137,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             try {
+                // 기존 Supabase 연결 유지
                 _supabase = supabase.createClient('https://rrbiyvcjtqvdfhudagnk.supabase.co', 'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV');
             } catch(e) { console.error("Supabase 로드 실패:", e); }
 
@@ -133,8 +147,11 @@
 
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    const modal = document.getElementById('session-modal');
-                    if (modal.style.display === 'flex') closeModal();
+                    const sessionModal = document.getElementById('session-modal');
+                    const aiPopupModal = document.getElementById('ai-popup-modal');
+                    
+                    if (sessionModal.style.display === 'flex') closeModal();
+                    else if (aiPopupModal.style.display === 'flex') closeAiPopup();
                 }
             });
 
@@ -212,141 +229,27 @@
             setTimeout(() => { warningEl.style.opacity = "0"; }, 3000);
         }
 
-        function submitOrder() {
-            const qtyInput = document.getElementById('order-qty');
-            const qty = parseInt(qtyInput.value);
-            if (isNaN(qty) || qty < 0) {
-                showWarning("올바른 숫자를 입력하세요.");
-                qtyInput.focus();
-                return;
+        function getAiRoundComment(qty, demand) {
+            if (qty === demand) {
+                return `정확히 수요(${demand}개)와 일치하게 주문하셨습니다! 완벽한 예측입니다.`;
+            } else if (qty > demand) {
+                const over = qty - demand;
+                return `수요(${demand}개)보다 <b>${over}개 많이</b> 주문하셨습니다.<br><span style="color:var(--error-color); font-size:0.95rem;">남은 재고로 인한 원가 손실(과잉 재고)이 발생했습니다.</span>`;
+            } else {
+                const under = demand - qty;
+                return `수요(${demand}개)보다 <b>${under}개 적게</b> 주문하셨습니다.<br><span style="color:#f59e0b; font-size:0.95rem;">더 팔 수 있었는데 기회를 놓쳤습니다. (기회 손실)</span>`;
             }
-            if (qty < minD || qty > maxD) {
-                showWarning(`범위를 벗어났습니다. (${minD} ~ ${maxD} 사이 입력 권장)`);
-                qtyInput.focus();
-                return;
-            }
+        }
 
-            const demand = window.currentScenario.actual;
-            const profit = (Math.min(qty, demand) * price) - (qty * cost);
-            totalProfit += profit;
-            localDataLog.push({
-                subject_id: subjectId, session_number: currentSession, round_in_session: currentRoundInSession,
-                total_round: totalRoundCount, cost: cost, ai_recommendation: optimalQ,
-                user_order: qty, actual_demand: demand, profit: profit, accumulated_profit: totalProfit
-            });
-            const row = `<tr><td>${currentSession}</td><td>${currentRoundInSession}</td><td>${optimalQ}</td><td>${qty}</td><td>${demand}</td><td>${profit.toLocaleString()}</td></tr>`;
-            document.getElementById('history-table-body').insertAdjacentHTML('afterbegin', row);
-            document.getElementById('total-profit').innerText = totalProfit.toLocaleString();
+        function closeAiPopup() {
+            document.getElementById('ai-popup-modal').style.display = 'none';
+            document.getElementById('order-qty').disabled = false;
+            document.getElementById('btn-submit').disabled = false;
+
             if (currentRoundInSession < roundsPerSession) {
                 currentRoundInSession++; totalRoundCount++;
                 document.getElementById('progress-bar').style.width = (totalRoundCount / 40 * 100) + "%";
-                generateNewScenario(); drawChart();
+                generateNewScenario(); 
             } else if (currentSession < totalSessions) {
                 showSessionModal();
-            } else { saveAllDataToSupabase(); }
-        }
-
-        function showSessionModal() {
-            const costs = [3000, 9000, 3000, 9000];
-            const distTexts = ["U[1, 100]", "U[1, 100]", "U[300, 500]", "U[300, 500]"];
-            document.getElementById('modal-title').innerText = `세션 ${currentSession} 완료`;
-            const oldCost = costs[currentSession-1], newCost = costs[currentSession];
-            const oldDist = distTexts[currentSession-1], newDist = distTexts[currentSession];
-            const costBox = document.getElementById('cost-box');
-            const distBox = document.getElementById('dist-box');
-
-            if(oldCost === newCost) {
-                costBox.innerHTML = `<span class="no-change">변화 없음 (${newCost.toLocaleString()}원)</span>`;
-            } else {
-                costBox.innerHTML = `<span class="old-val">${oldCost.toLocaleString()}원</span><span class="arrow">➔</span><span class="new-val">${newCost.toLocaleString()}원</span>`;
             }
-
-            if(oldDist === newDist) {
-                distBox.innerHTML = `<span class="no-change">변화 없음 (${newDist})</span>`;
-            } else {
-                distBox.innerHTML = `<span class="old-val">${oldDist}</span><span class="arrow">➔</span><span class="new-val">${newDist}</span>`;
-            }
-            document.getElementById('session-modal').style.display = 'flex';
-            document.getElementById('modal-confirm-btn').focus();
-        }
-
-        function closeModal() {
-            document.getElementById('session-modal').style.display = 'none';
-            currentSession++; currentRoundInSession = 1; totalRoundCount++;
-            updateEnvironment(); generateNewScenario(); drawChart();
-        }
-
-        async function saveAllDataToSupabase() {
-            const btn = document.getElementById('btn-submit');
-            btn.innerText = "저장 중..."; btn.disabled = true;
-            const { error } = await _supabase.from('experiment_results').insert(localDataLog);
-            if (error) { alert("저장 실패: " + error.message); btn.disabled = false; }
-            else { alert("✅ 모든 데이터가 저장되었습니다. 실험이 종료되었습니다."); }
-        }
-
-        function drawChart() {
-            const canvas = document.getElementById('demandChart');
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width = canvas.parentElement.clientWidth;
-            const h = canvas.height = canvas.parentElement.clientHeight;
-            const pad = 35;
-            const xStep = (w - pad * 2) / 39;
-            ctx.clearRect(0, 0, w, h);
-
-            const sessionColors = ["#f8fafc", "#ffffff", "#f8fafc", "#ffffff"];
-            for (let i = 0; i < currentSession; i++) {
-                ctx.fillStyle = sessionColors[i];
-                ctx.fillRect(pad + (i * 10 * xStep), 0, 10 * xStep, h);
-            }
-
-            // [수정] 세션 2와 3 사이 구분 점선 (Dash Line)
-            if (currentSession >= 3) {
-                ctx.beginPath();
-                ctx.strokeStyle = "#333"; 
-                ctx.lineWidth = 2;        
-                ctx.setLineDash([5, 5]); // 점선 설정 (5px 선, 5px 공백)
-                const xLine = pad + 20 * xStep;
-                ctx.moveTo(xLine, 0);
-                ctx.lineTo(xLine, h - pad);
-                ctx.stroke();
-                ctx.setLineDash([]);      // 이후 다른 선들을 위해 점선 해제
-                ctx.lineWidth = 1;
-            }
-
-            const getY = (val, session) => {
-                let currentMaxY = (session <= 2) ? 120 : 550;
-                let currentMinY = (session <= 2) ? 0 : 250;
-                return h - pad - ((val - currentMinY) / (currentMaxY - currentMinY) * (h - pad * 2));
-            };
-
-            ctx.strokeStyle = "#eee"; ctx.fillStyle = "#999"; ctx.font = "10px Arial";
-            for(let v=0; v<=100; v+=50) {
-                let y = getY(v, 1);
-                ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + 20 * xStep, y); ctx.stroke();
-                ctx.fillText(v, 5, y+4);
-            }
-            if (currentSession >= 3) {
-                for(let v=300; v<=500; v+=100) {
-                    let y = getY(v, 3);
-                    ctx.beginPath(); ctx.moveTo(pad + 20 * xStep, y); ctx.lineTo(w-pad, y); ctx.stroke();
-                    ctx.fillText(v, w-pad+5, y+4);
-                }
-            }
-            if (localDataLog.length === 0) return;
-            const drawL = (key, col, dash) => {
-                ctx.beginPath(); ctx.strokeStyle = col; ctx.setLineDash(dash ? [5, 5] : []);
-                localDataLog.forEach((d, i) => {
-                    const x = pad + (i * xStep);
-                    const y = getY(d[key], d.session_number);
-                    if (i === 0 || i === 10 || i === 20 || i === 30) ctx.moveTo(x, y); 
-                    else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-            };
-            drawL('actual_demand', "#1f2937", false);
-            drawL('ai_recommendation', "#7c3aed", true);
-            drawL('user_order', "#2563eb", false);
-        }
-    </script>
-</body>
-</html>
