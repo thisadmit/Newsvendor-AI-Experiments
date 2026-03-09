@@ -7,14 +7,16 @@
     <style>
         :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --ai-color: #7c3aed; --error-color: #ef4444; }
         * { box-sizing: border-box; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; }
+        /* [수정됨] height: 100vh를 제거하고 min-height로 변경하여 세로 스크롤 허용 */
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); margin: 0; padding: 20px; display: flex; flex-direction: column; min-height: 100vh; height: auto; }
         
         /* Layout */
         .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .progress-container { flex-grow: 1; margin: 0 20px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
         .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; } 
+        /* [수정됨] 패널의 세로 공간을 충분히 확보하기 위해 min-height: 650px 지정 */
+        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; min-height: 650px; } 
         
         /* Elements */
         .instruction-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 15px 0; line-height: 1.6; font-size: 0.95rem; }
@@ -48,13 +50,15 @@
         .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
         .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; width: 100%; text-align: center; }
         
-        /* 말풍선 스타일의 팝업과 통통 튀는 애니메이션 */
+        /* [수정됨] 말풍선 스타일의 팝업 내부 스크롤 처리 및 높이 유연화 */
         #inline-ai-popup { 
             display: none; 
             position: absolute; 
             bottom: 15px; 
             left: 5%; 
             width: 90%; 
+            max-height: 90%; /* 패널을 벗어나지 않도록 방어 */
+            overflow-y: auto; /* 넘치면 스크롤 생성 */
             background: #ffffff; 
             border: 2px solid var(--ai-color);
             border-radius: 16px;
@@ -156,7 +160,7 @@
             
             <div class="card">
                 <div class="chart-container"><canvas id="demandChart"></canvas></div>
-                <div style="overflow-y:auto; height:200px; border-top:1px solid #eee;">
+                <div style="overflow-y:auto; flex-grow: 1; border-top:1px solid #eee;">
                     <table>
                         <thead><tr><th>Sess</th><th>Rnd</th><th>최적(Q*)</th><th>나</th><th>수요</th><th>수익</th></tr></thead>
                         <tbody id="history-table-body"></tbody>
@@ -348,7 +352,6 @@
             const roundId = `${currentSession}-${currentRoundInSession}`;
             const aiFeedback = getAiRoundComment(qty, demand);
             
-            // [수정됨] 방금 추가된 라운드는 무조건 코멘트가 펼쳐진 상태(style="display: table-row;")로 표에 들어갑니다.
             const row = `
                 <tr>
                     <td>${currentSession}</td>
