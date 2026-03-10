@@ -33,7 +33,7 @@
         .comment-btn.new-comment { animation: pulseGlow 1s ease-in-out 2; }
         @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); } 50% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.12); } }
         #table-ai-popup { display: none; position: absolute; width: 360px; max-width: calc(100% - 30px); background: #ffffff; border: 2px solid var(--ai-color); border-radius: 16px; z-index: 300; padding: 18px 20px; text-align: left; box-shadow: 0 12px 30px rgba(124, 58, 237, 0.22); animation: popBubble 0.25s ease; }
-        /* [수정됨] 꼬리가 오른쪽을 향하도록 변경 */
+        /* 꼬리가 오른쪽을 향하도록 설정 */
         #table-ai-popup::after { content: ""; position: absolute; top: var(--tail-top, 50%); right: -10px; transform: translateY(-50%); border-width: 10px 0 10px 10px; border-style: solid; border-color: transparent transparent transparent var(--ai-color); }
         @keyframes popBubble { 0% { transform: translateY(8px) scale(0.98); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         #table-ai-text { font-size: 0.93rem; line-height: 1.55; color: #333; margin-bottom: 12px; }
@@ -208,7 +208,7 @@
 
             if (followedOptimal && demandMatched) {
                 title = "🎯 최적 주문량 일치";
-                desc = `최적 주문량에 맞게 훌륭한 의사결정을 내리셨군요! 운 좋게 실제 수요도 비슷하게 발생하여 좋은 수익을 거두셨습니다. 외부 요인에 흔들리지 말고 계속 지금처럼 최적 주문량을 유지하는 것이 가장 좋습니다.`;
+                desc = `최적 주문량에 맞게 훌륭한 의사결정을 내리셨군요! 운 좋게 실제 수요도 비슷하게 발생하여 좋은 수익을 거두셨습니다. 외부 요인에 흔들리지 말고 계속 지금처럼 최적 주문량 유지하는 것이 가장 좋습니다.`;
                 return `<div style="font-weight:bold; color:var(--ai-color); margin-bottom:6px; font-size:1.05rem;">${title}</div><div>${desc}</div>`;
             } else if (followedOptimal && !demandMatched) {
                 title = "📊 합리적 결정 / 수요 빗나감";
@@ -248,8 +248,8 @@
             popup.style.left = '0px'; popup.style.top = '0px';
             const popupWidth = popup.offsetWidth, popupHeight = popup.offsetHeight;
 
-            // [수정됨] 팝업을 버튼 왼쪽으로 밀어내도록 계산
-            let left = (buttonRect.left - wrapperRect.left) - popupWidth - 24;
+            // 창 본체를 화살표 길이(10px) + 여백(2px) 만큼 버튼 왼쪽으로 더 띄움
+            let left = (buttonRect.left - wrapperRect.left) - popupWidth - 12;
             const buttonCenterY = (buttonRect.top + buttonRect.bottom) / 2;
             let top = (buttonCenterY - wrapperRect.top) - (popupHeight / 2);
 
