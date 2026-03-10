@@ -237,7 +237,7 @@
         #table-ai-popup::after {
             content: "";
             position: absolute;
-            top: 50%;
+            top: var(--tail-top, 50%);
             left: -10px;
             transform: translateY(-50%);
             border-width: 10px 10px 10px 0;
@@ -659,7 +659,6 @@
 
             const rndCellRect = cells[1].getBoundingClientRect();
             const commentCellRect = cells[2].getBoundingClientRect();
-            const optimalCellRect = cells[3].getBoundingClientRect();
 
             const anchorX = (commentCellRect.left + commentCellRect.right) / 2;
             const anchorY = (rndCellRect.top + rndCellRect.bottom) / 2;
@@ -684,11 +683,25 @@
             popup.style.left = left + 'px';
             popup.style.top = top + 'px';
 
+            // 꼬리가 실제 버튼 중심을 향하도록 계산
+            const buttonRect = buttonEl.getBoundingClientRect();
+            const buttonCenterY = (buttonRect.top + buttonRect.bottom) / 2;
+
+            let tailTop = buttonCenterY - (top + wrapperRect.top);
+
+            // 꼬리가 너무 위/아래 끝으로 붙지 않게 제한
+            const minTailTop = 18;
+            const maxTailTop = popupHeight - 18;
+            if (tailTop < minTailTop) tailTop = minTailTop;
+            if (tailTop > maxTailTop) tailTop = maxTailTop;
+
+            popup.style.setProperty('--tail-top', `${tailTop}px`);
+
             if (lockedMode) {
                 setInputLocked(true);
             }
         }
-
+        
         function hideTablePopup(unlockInput = false) {
             document.getElementById('table-ai-popup').style.display = 'none';
             activeCommentButton = null;
