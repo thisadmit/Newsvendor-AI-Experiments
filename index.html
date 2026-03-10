@@ -5,362 +5,56 @@
     <title>Newsvendor AI Experiment</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --bg-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --ai-color: #7c3aed;
-            --error-color: #ef4444;
-        }
-
+        :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --ai-color: #7c3aed; --error-color: #ef4444; }
         * { box-sizing: border-box; }
-
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
-
-        body {
-            font-family: 'Pretendard', sans-serif;
-            background: var(--bg-color);
-            padding: 20px;
-            overflow: hidden;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            flex: 0 0 auto;
-        }
-
-        .progress-container {
-            flex-grow: 1;
-            margin: 0 20px;
-            background: #e5e7eb;
-            height: 10px;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: var(--primary-color);
-            width: 0%;
-            transition: width 0.3s;
-        }
-
-        #experiment-section {
-            display: none;
-            height: calc(100vh - 40px);
-            overflow: hidden;
-        }
-
-        .main-container {
-            display: grid;
-            grid-template-columns: 1fr 1.6fr;
-            gap: 20px;
-            height: calc(100% - 72px);
-            min-height: 0;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            height: 100%;
-            min-height: 0;
-            overflow: hidden;
-        }
-
-        .instruction-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 15px 0;
-            line-height: 1.6;
-            font-size: 0.95rem;
-        }
-
-        .info-box {
-            border: 2px solid #e2e8f0;
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .info-list {
-            margin: 10px 0 0 0;
-            padding-left: 20px;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: #334155;
-        }
-
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 15px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 1.1rem;
-            margin-top: 10px;
-        }
-
-        .submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        #warning-msg {
-            color: var(--error-color);
-            font-size: 0.85rem;
-            font-weight: bold;
-            margin-top: 5px;
-            min-height: 1.2rem;
-            transition: opacity 0.3s;
-            opacity: 0;
-        }
-
-        .chart-container {
-            flex: 1 1 auto;
-            background: #fafafa;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            min-height: 220px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        table {
-            width: 100%;
-            font-size: 0.85rem;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 8px;
-            text-align: center;
-            border-bottom: 1px solid #eee;
-            white-space: nowrap;
-        }
-
-        .history-wrapper {
-            position: relative;
-            flex: 0 0 320px;
-            min-height: 0;
-            border-top: 1px solid #eee;
-            overflow: visible;
-        }
-
-        .history-scroll {
-            height: 320px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        .comment-col {
-            width: 72px;
-        }
-
-        .comment-btn {
-            cursor: pointer;
-            color: var(--ai-color);
-            font-weight: bold;
-            border: 1px solid var(--ai-color);
-            background: #fff;
-            padding: 5px 8px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            min-width: 48px;
-        }
-
-        .comment-btn:hover {
-            background: var(--ai-color);
-            color: #fff;
-        }
-
-        .comment-btn.new-comment {
-            animation: pulseGlow 1s ease-in-out 2;
-        }
-
-        @keyframes pulseGlow {
-            0% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); }
-            50% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.12); }
-            100% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); }
-        }
-
-        #table-ai-popup {
-            display: none;
-            position: absolute;
-            width: 360px;
-            max-width: calc(100% - 30px);
-            background: #ffffff;
-            border: 2px solid var(--ai-color);
-            border-radius: 16px;
-            z-index: 300;
-            padding: 18px 20px;
-            text-align: left;
-            box-shadow: 0 12px 30px rgba(124, 58, 237, 0.22);
-            animation: popBubble 0.25s ease;
-        }
-
-        #table-ai-popup::after {
-            content: "";
-            position: absolute;
-            top: var(--tail-top, 50%);
-            left: -10px;
-            transform: translateY(-50%);
-            border-width: 10px 10px 10px 0;
-            border-style: solid;
-            border-color: transparent var(--ai-color) transparent transparent;
-        }
-
-        @keyframes popBubble {
-            0% { transform: translateY(8px) scale(0.98); opacity: 0; }
-            100% { transform: translateY(0) scale(1); opacity: 1; }
-        }
-
-        #table-ai-text {
-            font-size: 0.93rem;
-            line-height: 1.55;
-            color: #333;
-            margin-bottom: 12px;
-        }
-
-        #table-ai-close-btn {
-            width: 100%;
-            padding: 10px;
-            background: var(--ai-color);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        #session-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 20px;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .change-item {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            margin: 15px 0;
-            padding: 15px;
-            background: #f9fafb;
-            border-radius: 12px;
-            min-height: 60px;
-        }
-
-        .old-val {
-            color: #94a3b8;
-            text-decoration: line-through;
-            font-size: 1.1rem;
-        }
-
-        .new-val {
-            color: var(--primary-color);
-            font-weight: bold;
-            font-size: 1.3rem;
-        }
-
-        .no-change {
-            color: #64748b;
-            font-weight: normal;
-            font-size: 1.1rem;
-            width: 100%;
-            text-align: center;
-        }
-
-        @media (max-width: 1100px) {
-            body {
-                overflow: auto;
-            }
-
-            #experiment-section {
-                height: auto;
-                overflow: visible;
-            }
-
-            .main-container {
-                grid-template-columns: 1fr;
-                height: auto;
-            }
-
-            .card {
-                height: auto;
-                min-height: 500px;
-            }
-
-            .history-wrapper {
-                flex-basis: 320px;
-            }
-        }
+        html, body { height: 100%; margin: 0; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); padding: 20px; overflow: hidden; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex: 0 0 auto; }
+        .progress-container { flex-grow: 1; margin: 0 20px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
+        #experiment-section { display: none; height: calc(100vh - 40px); overflow: hidden; }
+        .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; height: calc(100% - 72px); min-height: 0; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; height: 100%; min-height: 0; overflow: hidden; }
+        .instruction-box, .info-box { background: #f8fafc; border-radius: 8px; padding: 15px; margin-bottom: 15px; line-height: 1.6; font-size: 0.95rem; border: 1px solid #e2e8f0; }
+        .info-box { border: 2px solid #e2e8f0; }
+        .info-list { margin: 10px 0 0 0; padding-left: 20px; font-size: 0.95rem; line-height: 1.6; color: #334155; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
+        .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        #warning-msg { color: var(--error-color); font-size: 0.85rem; font-weight: bold; margin-top: 5px; min-height: 1.2rem; transition: opacity 0.3s; opacity: 0; }
+        .chart-container { flex: 1 1 auto; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px; min-height: 220px; position: relative; overflow: hidden; }
+        table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+        th, td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; white-space: nowrap; }
+        .history-wrapper { position: relative; flex: 0 0 320px; min-height: 0; border-top: 1px solid #eee; overflow: visible; }
+        .history-scroll { height: 320px; overflow-y: auto; overflow-x: hidden; position: relative; }
+        .comment-col { width: 72px; }
+        .comment-btn { cursor: pointer; color: var(--ai-color); font-weight: bold; border: 1px solid var(--ai-color); background: #fff; padding: 5px 8px; border-radius: 8px; font-size: 0.75rem; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 48px; }
+        .comment-btn:hover { background: var(--ai-color); color: #fff; }
+        .comment-btn.new-comment { animation: pulseGlow 1s ease-in-out 2; }
+        @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); } 50% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.12); } }
+        #table-ai-popup { display: none; position: absolute; width: 360px; max-width: calc(100% - 30px); background: #ffffff; border: 2px solid var(--ai-color); border-radius: 16px; z-index: 300; padding: 18px 20px; text-align: left; box-shadow: 0 12px 30px rgba(124, 58, 237, 0.22); animation: popBubble 0.25s ease; }
+        #table-ai-popup::after { content: ""; position: absolute; top: var(--tail-top, 50%); left: -10px; transform: translateY(-50%); border-width: 10px 10px 10px 0; border-style: solid; border-color: transparent var(--ai-color) transparent transparent; }
+        @keyframes popBubble { 0% { transform: translateY(8px) scale(0.98); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+        #table-ai-text { font-size: 0.93rem; line-height: 1.55; color: #333; margin-bottom: 12px; }
+        #table-ai-close-btn { width: 100%; padding: 10px; background: var(--ai-color); color: #fff; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        #session-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+        .modal-content { background-color: #fff; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .change-item { display: flex; justify-content: space-around; align-items: center; margin: 15px 0; padding: 15px; background: #f9fafb; border-radius: 12px; min-height: 60px; }
+        .old-val { color: #94a3b8; text-decoration: line-through; font-size: 1.1rem; }
+        .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
+        .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; width: 100%; text-align: center; }
+        @media (max-width: 1100px) { body { overflow: auto; } #experiment-section { height: auto; overflow: visible; } .main-container { grid-template-columns: 1fr; height: auto; } .card { height: auto; min-height: 500px; } .history-wrapper { flex-basis: 320px; } }
     </style>
 </head>
 <body>
-
     <div id="session-modal">
         <div class="modal-content">
             <h2 id="modal-title">세션 종료</h2>
             <p style="color: #64748b; margin-bottom: 25px;">다음 세션 시장 환경 변화 안내</p>
-
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">💰 원가(Cost) 변화</div>
             <div class="change-item" id="cost-box"></div>
-
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">📈 수요 범위(Demand) 변화</div>
             <div class="change-item" id="dist-box"></div>
-
             <button class="submit-btn" id="modal-confirm-btn" onclick="closeModal()">확인 및 다음 세션 시작 (Enter)</button>
         </div>
     </div>
@@ -375,12 +69,10 @@
                 <li><b>조건 변화:</b> 각 세션마다 상품의 <b>원가</b>와 <b>수요 발생 범위</b>가 달라집니다.</li>
             </ul>
         </div>
-
         <div style="margin-top: 10px;">
             <label style="display:block; font-weight:bold; margin-bottom:8px;">피실험자 고유 코드 (Subject ID):</label>
             <input type="text" id="subject-id" placeholder="ID를 입력하고 Enter를 누르세요.">
         </div>
-
         <button class="submit-btn" id="start-btn">지침을 이해했습니다. 실험 시작</button>
     </div>
 
@@ -394,7 +86,6 @@
         <div class="main-container">
             <div class="card" id="decision-panel">
                 <h3 style="margin-top:0;">Decision Panel</h3>
-
                 <div id="info-area" class="info-box">
                     <h4 style="margin: 0 0 5px 0; color: #1e293b;">📊 현재 시장 환경 정보</h4>
                     <ul class="info-list">
@@ -421,25 +112,17 @@
 
             <div class="card" id="history-card">
                 <div class="chart-container"><canvas id="demandChart"></canvas></div>
-
                 <div class="history-wrapper">
                     <div class="history-scroll" id="history-scroll">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Sess</th>
-                                    <th>Rnd</th>
-                                    <th class="comment-col">💬</th>
-                                    <th>최적(Q*)</th>
-                                    <th>나</th>
-                                    <th>수요</th>
-                                    <th>수익</th>
+                                    <th>Sess</th><th>Rnd</th><th class="comment-col">💬</th><th>최적(Q*)</th><th>나</th><th>수요</th><th>수익</th>
                                 </tr>
                             </thead>
                             <tbody id="history-table-body"></tbody>
                         </table>
                     </div>
-
                     <div id="table-ai-popup">
                         <div id="table-ai-text"></div>
                         <button id="table-ai-close-btn" onclick="handlePopupClose()">확인 및 다음 라운드 진행 (Enter)</button>
@@ -451,93 +134,40 @@
 
     <script>
         let _supabase, subjectId = "", currentSession = 1, currentRoundInSession = 1, totalRoundCount = 1;
-        const roundsPerSession = 10, totalSessions = 4, price = 12000;
-        let cost, optimalQ, minD, maxD, totalProfit = 0;
-        const localDataLog = [];
-
-        let isLockedByPopup = false;
-        let mustAdvanceAfterPopup = false;
-        let activeCommentButton = null;
+        const roundsPerSession = 10, totalSessions = 4, price = 12000, localDataLog = [];
+        let cost, optimalQ, minD, maxD, totalProfit = 0, isLockedByPopup = false, mustAdvanceAfterPopup = false, activeCommentButton = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             try {
-                _supabase = supabase.createClient(
-                    'https://rrbiyvcjtqvdfhudagnk.supabase.co',
-                    'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV'
-                );
-            } catch(e) {
-                console.error("Supabase 로드 실패:", e);
-            }
+                _supabase = supabase.createClient('https://rrbiyvcjtqvdfhudagnk.supabase.co', 'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV');
+            } catch(e) { console.error("Supabase 로드 실패:", e); }
 
             document.getElementById('start-btn').onclick = startExperiment;
             document.getElementById('btn-submit').onclick = submitOrder;
 
             window.addEventListener('keydown', (e) => {
-                const sessionModal = document.getElementById('session-modal');
-                const tablePopup = document.getElementById('table-ai-popup');
-
+                const sessionModal = document.getElementById('session-modal'), tablePopup = document.getElementById('table-ai-popup');
                 if (e.key === 'Enter') {
-                    if (sessionModal.style.display === 'flex') {
-                        e.preventDefault();
-                        closeModal();
-                        return;
-                    }
-
-                    if (tablePopup.style.display === 'block') {
-                        e.preventDefault();
-                        handlePopupClose();
-                        return;
-                    }
+                    if (sessionModal.style.display === 'flex') { e.preventDefault(); closeModal(); return; }
+                    if (tablePopup.style.display === 'block') { e.preventDefault(); handlePopupClose(); return; }
                 }
             });
 
-            document.getElementById('subject-id').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    startExperiment();
-                }
-            });
-
-            document.getElementById('order-qty').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !isLockedByPopup) {
-                    e.preventDefault();
-                    submitOrder();
-                }
-            });
-
-            document.getElementById('history-scroll').addEventListener('scroll', () => {
-                hideTablePopup(false);
-            });
-
-            window.addEventListener('resize', () => {
-                if (activeCommentButton && document.getElementById('table-ai-popup').style.display === 'block') {
-                    openCommentPopup(activeCommentButton, mustAdvanceAfterPopup);
-                }
-            });
+            document.getElementById('subject-id').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); startExperiment(); } });
+            document.getElementById('order-qty').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !isLockedByPopup) { e.preventDefault(); submitOrder(); } });
+            document.getElementById('history-scroll').addEventListener('scroll', () => { hideTablePopup(false); });
+            window.addEventListener('resize', () => { if (activeCommentButton && document.getElementById('table-ai-popup').style.display === 'block') openCommentPopup(activeCommentButton, mustAdvanceAfterPopup); });
         });
 
         function updateEnvironment() {
-            const costs = [3000, 9000, 3000, 9000];
-            const dists = [
-                {min:1, max:100},
-                {min:1, max:100},
-                {min:300, max:500},
-                {min:300, max:500}
-            ];
-
-            cost = costs[currentSession - 1];
-            minD = dists[currentSession - 1].min;
-            maxD = dists[currentSession - 1].max;
-
-            const cu = price - cost;
-            const co = cost;
-            const criticalRatio = cu / (cu + co);
+            const costs = [3000, 9000, 3000, 9000], dists = [{min:1, max:100}, {min:1, max:100}, {min:300, max:500}, {min:300, max:500}];
+            cost = costs[currentSession - 1]; minD = dists[currentSession - 1].min; maxD = dists[currentSession - 1].max;
+            const cu = price - cost, co = cost, criticalRatio = cu / (cu + co);
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
 
             document.getElementById('header-cost').innerText = cost.toLocaleString();
             document.getElementById('header-dist').innerText = `U[${minD}, ${maxD}]`;
             document.getElementById('current-session').innerText = currentSession;
-
             document.getElementById('info-cost').innerText = cost.toLocaleString();
             document.getElementById('info-cu').innerText = cu.toLocaleString();
             document.getElementById('info-co').innerText = co.toLocaleString();
@@ -545,23 +175,14 @@
 
         function startExperiment() {
             subjectId = document.getElementById('subject-id').value.trim();
-            if (!subjectId) {
-                alert("ID를 입력하세요.");
-                return;
-            }
-
+            if (!subjectId) return alert("ID를 입력하세요.");
             document.getElementById('instruction-section').style.display = 'none';
             document.getElementById('experiment-section').style.display = 'block';
-
-            updateEnvironment();
-            generateNewScenario();
-            drawChart();
+            updateEnvironment(); generateNewScenario(); drawChart();
         }
 
         function generateNewScenario() {
-            const actualDemand = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
-            window.currentScenario = { ai: optimalQ, actual: actualDemand };
-
+            window.currentScenario = { ai: optimalQ, actual: Math.floor(Math.random() * (maxD - minD + 1)) + minD };
             document.getElementById('order-qty').value = '';
             document.getElementById('current-round-display').innerText = currentRoundInSession;
             document.getElementById('order-qty').focus();
@@ -569,11 +190,8 @@
 
         function showWarning(text) {
             const warningEl = document.getElementById('warning-msg');
-            warningEl.innerText = text;
-            warningEl.style.opacity = "1";
-            setTimeout(() => {
-                warningEl.style.opacity = "0";
-            }, 3000);
+            warningEl.innerText = text; warningEl.style.opacity = "1";
+            setTimeout(() => { warningEl.style.opacity = "0"; }, 3000);
         }
 
         function setInputLocked(locked) {
@@ -584,18 +202,13 @@
 
         function getAiRoundComment(qty, demand) {
             const tolerance = Math.max(2, Math.round((maxD - minD) * 0.05));
-            const followedOptimal = Math.abs(qty - optimalQ) <= tolerance;
-            const demandMatched = Math.abs(qty - demand) <= tolerance;
-
+            const followedOptimal = Math.abs(qty - optimalQ) <= tolerance, demandMatched = Math.abs(qty - demand) <= tolerance;
             let title = "", desc = "", ver1 = "", ver2 = "";
 
             if (followedOptimal && demandMatched) {
                 title = "🎯 최적 주문량 일치";
                 desc = `최적 주문량에 맞게 훌륭한 의사결정을 내리셨군요! 운 좋게 실제 수요도 비슷하게 발생하여 좋은 수익을 거두셨습니다. 외부 요인에 흔들리지 말고 계속 지금처럼 최적 주문량을 유지하는 것이 가장 좋습니다.`;
-                return `
-                    <div style="font-weight:bold; color:var(--ai-color); margin-bottom:6px; font-size:1.05rem;">${title}</div>
-                    <div>${desc}</div>
-                `;
+                return `<div style="font-weight:bold; color:var(--ai-color); margin-bottom:6px; font-size:1.05rem;">${title}</div><div>${desc}</div>`;
             } else if (followedOptimal && !demandMatched) {
                 title = "📊 합리적 결정 / 수요 빗나감";
                 desc = `최적 주문량에 기반한 합리적인 주문을 하셨지만, 이번 라운드는 실제 수요가 크게 빗나가서 아쉬우셨을 것 같습니다.`;
@@ -611,227 +224,88 @@
             return `
                 <div style="font-weight:bold; color:var(--ai-color); margin-bottom:6px; font-size:1.05rem;">${title}</div>
                 <div style="margin-bottom:10px;">${desc}</div>
-                <div style="padding:7px 10px; background:#f8fafc; border-left:3px solid #2563eb; margin-bottom:6px; font-size:0.84rem;">
-                    <b>[Ver 1]</b> ${ver1}
-                </div>
-                <div style="padding:7px 10px; background:#fdf4ff; border-left:3px solid #d946ef; font-size:0.84rem;">
-                    <b>[Ver 2]</b> ${ver2}
-                </div>
+                <div style="padding:7px 10px; background:#f8fafc; border-left:3px solid #2563eb; margin-bottom:6px; font-size:0.84rem;"><b>[Ver 1]</b> ${ver1}</div>
+                <div style="padding:7px 10px; background:#fdf4ff; border-left:3px solid #d946ef; font-size:0.84rem;"><b>[Ver 2]</b> ${ver2}</div>
             `;
         }
 
-        function escapeHtmlAttr(str) {
-            return str
-                .replace(/&/g, '&amp;')
-                .replace(/"/g, '&quot;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-        }
-
-        function unescapeHtmlAttr(str) {
-            const txt = document.createElement('textarea');
-            txt.innerHTML = str;
-            return txt.value;
-        }
+        function escapeHtmlAttr(str) { return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function unescapeHtmlAttr(str) { const txt = document.createElement('textarea'); txt.innerHTML = str; return txt.value; }
 
         function openCommentPopup(buttonEl, lockedMode = false) {
             const raw = buttonEl.getAttribute('data-comment-html') || '';
-            const html = unescapeHtmlAttr(raw);
-            showTablePopupAtButton(buttonEl, html, lockedMode);
+            showTablePopupAtButton(buttonEl, unescapeHtmlAttr(raw), lockedMode);
         }
 
         function showTablePopupAtButton(buttonEl, html, lockedMode = false) {
-            const popup = document.getElementById('table-ai-popup');
-            const popupText = document.getElementById('table-ai-text');
-            const popupBtn = document.getElementById('table-ai-close-btn');
-            const wrapper = document.querySelector('.history-wrapper');
-
-            activeCommentButton = buttonEl;
-            mustAdvanceAfterPopup = lockedMode;
-
-            popupText.innerHTML = html;
-            popupBtn.textContent = lockedMode ? '확인 및 다음 라운드 진행 (Enter)' : '닫기';
+            const popup = document.getElementById('table-ai-popup'), popupText = document.getElementById('table-ai-text'), popupBtn = document.getElementById('table-ai-close-btn'), wrapper = document.querySelector('.history-wrapper');
+            activeCommentButton = buttonEl; mustAdvanceAfterPopup = lockedMode;
+            popupText.innerHTML = html; popupBtn.textContent = lockedMode ? '확인 및 다음 라운드 진행 (Enter)' : '닫기';
             popup.style.display = 'block';
 
-            const wrapperRect = wrapper.getBoundingClientRect();
-            const row = buttonEl.closest('tr');
-            const cells = row.querySelectorAll('td');
+            const wrapperRect = wrapper.getBoundingClientRect(), buttonRect = buttonEl.getBoundingClientRect();
+            popup.style.left = '0px'; popup.style.top = '0px';
+            const popupWidth = popup.offsetWidth, popupHeight = popup.offsetHeight;
 
-            const rndCellRect = cells[1].getBoundingClientRect();
-            const commentCellRect = cells[2].getBoundingClientRect();
-
-            const anchorX = (commentCellRect.left + commentCellRect.right) / 2;
-            const anchorY = (rndCellRect.top + rndCellRect.bottom) / 2;
-
-            popup.style.left = '0px';
-            popup.style.top = '0px';
-
-            const popupWidth = popup.offsetWidth;
-            const popupHeight = popup.offsetHeight;
-
-            let left = (anchorX - wrapperRect.left) - popupWidth - 18;
-            let top = (anchorY - wrapperRect.top) - (popupHeight / 2);
-
-            const maxLeft = wrapper.clientWidth - popupWidth - 8;
-            const maxTop = wrapper.clientHeight - popupHeight - 8;
-
-            if (left > maxLeft) left = maxLeft;
-            if (left < 8) left = 8;
-            if (top > maxTop) top = maxTop;
-            if (top < 8) top = 8;
-
-            popup.style.left = left + 'px';
-            popup.style.top = top + 'px';
-
-            // 꼬리가 실제 버튼 중심을 향하도록 계산
-            const buttonRect = buttonEl.getBoundingClientRect();
+            let left = (buttonRect.right - wrapperRect.left) + 24;
             const buttonCenterY = (buttonRect.top + buttonRect.bottom) / 2;
+            let top = (buttonCenterY - wrapperRect.top) - (popupHeight / 2);
+
+            const maxLeft = wrapper.clientWidth - popupWidth - 8, maxTop = wrapper.clientHeight - popupHeight - 8;
+            if (left > maxLeft) left = maxLeft; if (left < 8) left = 8;
+            if (top > maxTop) top = maxTop; if (top < 8) top = 8;
+
+            popup.style.left = left + 'px'; popup.style.top = top + 'px';
 
             let tailTop = buttonCenterY - (top + wrapperRect.top);
-
-            // 꼬리가 너무 위/아래 끝으로 붙지 않게 제한
-            const minTailTop = 18;
-            const maxTailTop = popupHeight - 18;
-            if (tailTop < minTailTop) tailTop = minTailTop;
-            if (tailTop > maxTailTop) tailTop = maxTailTop;
-
+            if (tailTop < 18) tailTop = 18; if (tailTop > popupHeight - 18) tailTop = popupHeight - 18;
             popup.style.setProperty('--tail-top', `${tailTop}px`);
 
-            if (lockedMode) {
-                setInputLocked(true);
-            }
-        }
-        
-        function hideTablePopup(unlockInput = false) {
-            document.getElementById('table-ai-popup').style.display = 'none';
-            activeCommentButton = null;
-
-            if (unlockInput) {
-                setInputLocked(false);
-            }
+            if (lockedMode) setInputLocked(true);
         }
 
-        function handlePopupClose() {
-            if (mustAdvanceAfterPopup) {
-                hideTablePopup(true);
-                mustAdvanceAfterPopup = false;
-                proceedAfterAcknowledgement();
-            } else {
-                hideTablePopup(false);
-            }
-        }
+        function hideTablePopup(unlockInput = false) { document.getElementById('table-ai-popup').style.display = 'none'; activeCommentButton = null; if (unlockInput) setInputLocked(false); }
+        function handlePopupClose() { if (mustAdvanceAfterPopup) { hideTablePopup(true); mustAdvanceAfterPopup = false; proceedAfterAcknowledgement(); } else { hideTablePopup(false); } }
 
         function proceedAfterAcknowledgement() {
             if (currentRoundInSession < roundsPerSession) {
-                currentRoundInSession++;
-                totalRoundCount++;
+                currentRoundInSession++; totalRoundCount++;
                 document.getElementById('progress-bar').style.width = (totalRoundCount / 40 * 100) + "%";
                 generateNewScenario();
-            } else if (currentSession < totalSessions) {
-                showSessionModal();
-            } else {
-                saveAllDataToSupabase();
-            }
+            } else if (currentSession < totalSessions) { showSessionModal(); } else { saveAllDataToSupabase(); }
         }
 
         function submitOrder() {
             if (isLockedByPopup) return;
+            const qtyInput = document.getElementById('order-qty'), qty = parseInt(qtyInput.value);
+            if (isNaN(qty) || qty < 0) { showWarning("올바른 숫자를 입력하세요."); qtyInput.focus(); return; }
+            if (qty < minD || qty > maxD) { showWarning(`범위를 벗어났습니다. (${minD} ~ ${maxD} 사이 입력 권장)`); qtyInput.focus(); return; }
 
-            const qtyInput = document.getElementById('order-qty');
-            const qty = parseInt(qtyInput.value);
-
-            if (isNaN(qty) || qty < 0) {
-                showWarning("올바른 숫자를 입력하세요.");
-                qtyInput.focus();
-                return;
-            }
-
-            if (qty < minD || qty > maxD) {
-                showWarning(`범위를 벗어났습니다. (${minD} ~ ${maxD} 사이 입력 권장)`);
-                qtyInput.focus();
-                return;
-            }
-
-            const demand = window.currentScenario.actual;
-            const profit = (Math.min(qty, demand) * price) - (qty * cost);
+            const demand = window.currentScenario.actual, profit = (Math.min(qty, demand) * price) - (qty * cost);
             totalProfit += profit;
 
-            localDataLog.push({
-                subject_id: subjectId,
-                session_number: currentSession,
-                round_in_session: currentRoundInSession,
-                total_round: totalRoundCount,
-                cost: cost,
-                ai_recommendation: optimalQ,
-                user_order: qty,
-                actual_demand: demand,
-                profit: profit,
-                accumulated_profit: totalProfit
-            });
+            localDataLog.push({ subject_id: subjectId, session_number: currentSession, round_in_session: currentRoundInSession, total_round: totalRoundCount, cost: cost, ai_recommendation: optimalQ, user_order: qty, actual_demand: demand, profit: profit, accumulated_profit: totalProfit });
 
-            const roundId = `${currentSession}-${currentRoundInSession}`;
-            const aiFeedback = getAiRoundComment(qty, demand);
-            const escapedComment = escapeHtmlAttr(aiFeedback);
-
-            const row = `
-                <tr id="row-${roundId}">
-                    <td>${currentSession}</td>
-                    <td>${currentRoundInSession}</td>
-                    <td class="comment-col">
-                        <button
-                            class="comment-btn new-comment"
-                            id="comment-btn-${roundId}"
-                            data-comment-html="${escapedComment}"
-                            onclick="openCommentPopup(this, false)"
-                        >💬</button>
-                    </td>
-                    <td>${optimalQ}</td>
-                    <td>${qty}</td>
-                    <td>${demand}</td>
-                    <td>${profit.toLocaleString()}</td>
-                </tr>
-            `;
-
+            const roundId = `${currentSession}-${currentRoundInSession}`, escapedComment = escapeHtmlAttr(getAiRoundComment(qty, demand));
+            const row = `<tr id="row-${roundId}"><td>${currentSession}</td><td>${currentRoundInSession}</td><td class="comment-col"><button class="comment-btn new-comment" id="comment-btn-${roundId}" data-comment-html="${escapedComment}" onclick="openCommentPopup(this, false)">💬</button></td><td>${optimalQ}</td><td>${qty}</td><td>${demand}</td><td>${profit.toLocaleString()}</td></tr>`;
+            
             document.getElementById('history-table-body').insertAdjacentHTML('afterbegin', row);
             document.getElementById('total-profit').innerText = totalProfit.toLocaleString();
-
             drawChart();
 
             const newButton = document.getElementById(`comment-btn-${roundId}`);
-            const historyScroll = document.getElementById('history-scroll');
-            historyScroll.scrollTop = 0;
-
-            setTimeout(() => {
-                newButton.classList.remove('new-comment');
-                openCommentPopup(newButton, true);
-            }, 60);
+            document.getElementById('history-scroll').scrollTop = 0;
+            setTimeout(() => { newButton.classList.remove('new-comment'); openCommentPopup(newButton, true); }, 60);
         }
 
         function showSessionModal() {
-            const costs = [3000, 9000, 3000, 9000];
-            const distTexts = ["U[1, 100]", "U[1, 100]", "U[300, 500]", "U[300, 500]"];
-
+            const costs = [3000, 9000, 3000, 9000], distTexts = ["U[1, 100]", "U[1, 100]", "U[300, 500]", "U[300, 500]"];
             document.getElementById('modal-title').innerText = `세션 ${currentSession} 완료`;
+            const oldCost = costs[currentSession - 1], newCost = costs[currentSession], oldDist = distTexts[currentSession - 1], newDist = distTexts[currentSession];
+            const costBox = document.getElementById('cost-box'), distBox = document.getElementById('dist-box');
 
-            const oldCost = costs[currentSession - 1];
-            const newCost = costs[currentSession];
-            const oldDist = distTexts[currentSession - 1];
-            const newDist = distTexts[currentSession];
-
-            const costBox = document.getElementById('cost-box');
-            const distBox = document.getElementById('dist-box');
-
-            if (oldCost === newCost) {
-                costBox.innerHTML = `<span class="no-change">변화 없음 (${newCost.toLocaleString()}원)</span>`;
-            } else {
-                costBox.innerHTML = `<span class="old-val">${oldCost.toLocaleString()}원</span><span class="arrow">➔</span><span class="new-val">${newCost.toLocaleString()}원</span>`;
-            }
-
-            if (oldDist === newDist) {
-                distBox.innerHTML = `<span class="no-change">변화 없음 (${newDist})</span>`;
-            } else {
-                distBox.innerHTML = `<span class="old-val">${oldDist}</span><span class="arrow">➔</span><span class="new-val">${newDist}</span>`;
-            }
+            costBox.innerHTML = oldCost === newCost ? `<span class="no-change">변화 없음 (${newCost.toLocaleString()}원)</span>` : `<span class="old-val">${oldCost.toLocaleString()}원</span><span class="arrow">➔</span><span class="new-val">${newCost.toLocaleString()}원</span>`;
+            distBox.innerHTML = oldDist === newDist ? `<span class="no-change">변화 없음 (${newDist})</span>` : `<span class="old-val">${oldDist}</span><span class="arrow">➔</span><span class="new-val">${newDist}</span>`;
 
             document.getElementById('session-modal').style.display = 'flex';
             document.getElementById('modal-confirm-btn').focus();
@@ -839,108 +313,36 @@
 
         function closeModal() {
             document.getElementById('session-modal').style.display = 'none';
-            currentSession++;
-            currentRoundInSession = 1;
-            totalRoundCount++;
-
-            updateEnvironment();
-            generateNewScenario();
-            drawChart();
+            currentSession++; currentRoundInSession = 1; totalRoundCount++;
+            updateEnvironment(); generateNewScenario(); drawChart();
         }
 
         async function saveAllDataToSupabase() {
-            const btn = document.getElementById('btn-submit');
-            btn.innerText = "저장 중...";
-            btn.disabled = true;
-
+            const btn = document.getElementById('btn-submit'); btn.innerText = "저장 중..."; btn.disabled = true;
             const { error } = await _supabase.from('experiment_results').insert(localDataLog);
-
-            if (error) {
-                alert("저장 실패: " + error.message);
-                btn.disabled = false;
-                btn.innerText = "주문 제출 (Submit)";
-            } else {
-                alert("✅ 모든 데이터가 저장되었습니다. 실험이 종료되었습니다.");
-            }
+            if (error) { alert("저장 실패: " + error.message); btn.disabled = false; btn.innerText = "주문 제출 (Submit)"; } 
+            else { alert("✅ 모든 데이터가 저장되었습니다. 실험이 종료되었습니다."); }
         }
 
         function drawChart() {
-            const canvas = document.getElementById('demandChart');
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width = canvas.parentElement.clientWidth;
-            const h = canvas.height = canvas.parentElement.clientHeight;
-            const pad = 35;
-            const xStep = (w - pad * 2) / 39;
-
+            const canvas = document.getElementById('demandChart'), ctx = canvas.getContext('2d');
+            const w = canvas.width = canvas.parentElement.clientWidth, h = canvas.height = canvas.parentElement.clientHeight, pad = 35, xStep = (w - pad * 2) / 39;
             ctx.clearRect(0, 0, w, h);
 
             const sessionColors = ["#f8fafc", "#ffffff", "#f8fafc", "#ffffff"];
-            for (let i = 0; i < currentSession; i++) {
-                ctx.fillStyle = sessionColors[i];
-                ctx.fillRect(pad + (i * 10 * xStep), 0, 10 * xStep, h);
-            }
+            for (let i = 0; i < currentSession; i++) { ctx.fillStyle = sessionColors[i]; ctx.fillRect(pad + (i * 10 * xStep), 0, 10 * xStep, h); }
 
-            if (currentSession >= 3) {
-                ctx.beginPath();
-                ctx.strokeStyle = "#333";
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 5]);
-                const xLine = pad + 20 * xStep;
-                ctx.moveTo(xLine, 0);
-                ctx.lineTo(xLine, h - pad);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.lineWidth = 1;
-            }
+            if (currentSession >= 3) { ctx.beginPath(); ctx.strokeStyle = "#333"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]); const xLine = pad + 20 * xStep; ctx.moveTo(xLine, 0); ctx.lineTo(xLine, h - pad); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1; }
 
-            const getY = (val, session) => {
-                let currentMaxY = (session <= 2) ? 120 : 550;
-                let currentMinY = (session <= 2) ? 0 : 250;
-                return h - pad - ((val - currentMinY) / (currentMaxY - currentMinY) * (h - pad * 2));
-            };
+            const getY = (val, session) => { let currentMaxY = (session <= 2) ? 120 : 550, currentMinY = (session <= 2) ? 0 : 250; return h - pad - ((val - currentMinY) / (currentMaxY - currentMinY) * (h - pad * 2)); };
 
-            ctx.strokeStyle = "#eee";
-            ctx.fillStyle = "#999";
-            ctx.font = "10px Arial";
-
-            for (let v = 0; v <= 100; v += 50) {
-                let y = getY(v, 1);
-                ctx.beginPath();
-                ctx.moveTo(pad, y);
-                ctx.lineTo(pad + 20 * xStep, y);
-                ctx.stroke();
-                ctx.fillText(v, 5, y + 4);
-            }
-
-            if (currentSession >= 3) {
-                for (let v = 300; v <= 500; v += 100) {
-                    let y = getY(v, 3);
-                    ctx.beginPath();
-                    ctx.moveTo(pad + 20 * xStep, y);
-                    ctx.lineTo(w - pad, y);
-                    ctx.stroke();
-                    ctx.fillText(v, w - pad + 5, y + 4);
-                }
-            }
+            ctx.strokeStyle = "#eee"; ctx.fillStyle = "#999"; ctx.font = "10px Arial";
+            for (let v = 0; v <= 100; v += 50) { let y = getY(v, 1); ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + 20 * xStep, y); ctx.stroke(); ctx.fillText(v, 5, y + 4); }
+            if (currentSession >= 3) { for (let v = 300; v <= 500; v += 100) { let y = getY(v, 3); ctx.beginPath(); ctx.moveTo(pad + 20 * xStep, y); ctx.lineTo(w - pad, y); ctx.stroke(); ctx.fillText(v, w - pad + 5, y + 4); } }
 
             if (localDataLog.length === 0) return;
-
-            const drawL = (key, col, dash) => {
-                ctx.beginPath();
-                ctx.strokeStyle = col;
-                ctx.setLineDash(dash ? [5, 5] : []);
-                localDataLog.forEach((d, i) => {
-                    const x = pad + (i * xStep);
-                    const y = getY(d[key], d.session_number);
-                    if (i === 0 || i === 10 || i === 20 || i === 30) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-            };
-
-            drawL('actual_demand', "#1f2937", false);
-            drawL('ai_recommendation', "#7c3aed", true);
-            drawL('user_order', "#2563eb", false);
+            const drawL = (key, col, dash) => { ctx.beginPath(); ctx.strokeStyle = col; ctx.setLineDash(dash ? [5, 5] : []); localDataLog.forEach((d, i) => { const x = pad + (i * xStep), y = getY(d[key], d.session_number); if (i === 0 || i === 10 || i === 20 || i === 30) ctx.moveTo(x, y); else ctx.lineTo(x, y); }); ctx.stroke(); };
+            drawL('actual_demand', "#1f2937", false); drawL('ai_recommendation', "#7c3aed", true); drawL('user_order', "#2563eb", false);
         }
     </script>
 </body>
