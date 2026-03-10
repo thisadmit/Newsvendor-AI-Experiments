@@ -670,7 +670,7 @@
             const popupWidth = popup.offsetWidth;
             const popupHeight = popup.offsetHeight;
 
-            let left = (anchorX - wrapperRect.left) + 18;
+            let left = (anchorX - wrapperRect.left) - popupWidth - 18;
             let top = (anchorY - wrapperRect.top) - (popupHeight / 2);
 
             const maxLeft = wrapper.clientWidth - popupWidth - 8;
