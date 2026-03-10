@@ -217,8 +217,9 @@
         #table-ai-popup::after {
             content: "";
             position: absolute;
-            top: 18px;
+            top: 50%;
             left: -10px;
+            transform: translateY(-50%);
             border-width: 10px 10px 10px 0;
             border-style: solid;
             border-color: transparent var(--ai-color) transparent transparent;
@@ -608,7 +609,14 @@
             popup.style.display = 'block';
 
             const wrapperRect = wrapper.getBoundingClientRect();
-            const btnRect = buttonEl.getBoundingClientRect();
+            const row = buttonEl.closest('tr');
+            const cells = row.querySelectorAll('td');
+
+            const rndCellRect = cells[1].getBoundingClientRect();
+            const optimalCellRect = cells[2].getBoundingClientRect();
+
+            const anchorX = (rndCellRect.right + optimalCellRect.left) / 2;
+            const anchorY = (rndCellRect.top + rndCellRect.bottom) / 2;
 
             popup.style.left = '0px';
             popup.style.top = '0px';
@@ -616,21 +624,14 @@
             const popupWidth = popup.offsetWidth;
             const popupHeight = popup.offsetHeight;
 
-            let left = (btnRect.left - wrapperRect.left) - popupWidth - 14;
-            let top = (btnRect.top - wrapperRect.top) - 12;
-
-            if (left < 8) {
-                left = btnRect.right - wrapperRect.left + 14;
-                popup.style.setProperty('--bubble-arrow-side', 'left');
-                popup.style.setProperty('--bubble-arrow-color', 'var(--ai-color)');
-                popup.style.setProperty('--bubble-arrow-right', 'auto');
-            }
+            let left = (anchorX - wrapperRect.left) + 12;
+            let top = (anchorY - wrapperRect.top) - (popupHeight / 2);
 
             const maxLeft = wrapper.clientWidth - popupWidth - 8;
+            const maxTop = wrapper.clientHeight - popupHeight - 8;
+
             if (left > maxLeft) left = maxLeft;
             if (left < 8) left = 8;
-
-            const maxTop = wrapper.clientHeight - popupHeight - 8;
             if (top > maxTop) top = maxTop;
             if (top < 8) top = 8;
 
