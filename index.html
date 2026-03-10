@@ -5,83 +5,300 @@
     <title>Newsvendor AI Experiment</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary-color: #2563eb; --bg-color: #f3f4f6; --card-bg: #ffffff; --ai-color: #7c3aed; --error-color: #ef4444; }
-        * { box-sizing: border-box; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg-color); margin: 0; padding: 20px; display: flex; flex-direction: column; min-height: 100vh; height: auto; }
-        
-        /* Layout */
-        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .progress-container { flex-grow: 1; margin: 0 20px; background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s; }
-        .main-container { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; flex-grow: 1; min-height: 0; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; min-height: 650px; } 
-        
-        /* Elements */
-        .instruction-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 15px 0; line-height: 1.6; font-size: 0.95rem; }
-        
-        /* Info Panel */
-        .info-box { border: 2px solid #e2e8f0; background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .info-list { margin: 10px 0 0 0; padding-left: 20px; font-size: 0.95rem; line-height: 1.6; color: #334155; }
-        
-        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; }
-        .submit-btn { width: 100%; padding: 15px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
-        
-        /* Warning Message */
-        #warning-msg { color: var(--error-color); font-size: 0.85rem; font-weight: bold; margin-top: 5px; min-height: 1.2rem; transition: opacity 0.3s; opacity: 0; }
-
-        /* Chart & Table */
-        .chart-container { flex-grow: 1; background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 20px; min-height: 250px; position: relative; }
-        table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
-        th, td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
-        
-        /* Toggle & Comments inside Table */
-        .ai-comment-row { background-color: #f5f3ff; display: none; }
-        .ai-comment-cell { padding: 12px 20px !important; text-align: left !important; border-bottom: 2px solid #ddd6fe !important; }
-        .toggle-btn { cursor: pointer; color: var(--ai-color); font-weight: bold; border: 1px solid var(--ai-color); background: #fff; padding: 3px 6px; border-radius: 6px; font-size: 0.75rem; margin-left: 5px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 3px; }
-        .toggle-btn:hover { background: var(--ai-color); color: #fff; }
-
-        /* 세션 Modal Styles */
-        #session-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
-        .modal-content { background-color: #fff; padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .change-item { display: flex; justify-content: space-around; align-items: center; margin: 15px 0; padding: 15px; background: #f9fafb; border-radius: 12px; min-height: 60px; }
-        .old-val { color: #94a3b8; text-decoration: line-through; font-size: 1.1rem; }
-        .new-val { color: var(--primary-color); font-weight: bold; font-size: 1.3rem; }
-        .no-change { color: #64748b; font-weight: normal; font-size: 1.1rem; width: 100%; text-align: center; }
-        
-        /* 말풍선 스타일의 팝업 내부 스크롤 처리 및 높이 유연화 */
-        #inline-ai-popup { 
-            display: none; 
-            position: absolute; 
-            bottom: 15px; 
-            left: 5%; 
-            width: 90%; 
-            max-height: 90%; 
-            overflow-y: auto; 
-            background: #ffffff; 
-            border: 2px solid var(--ai-color);
-            border-radius: 16px;
-            z-index: 100; 
-            padding: 20px 25px; 
-            text-align: left; 
-            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.25);
-            animation: popBubble 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --ai-color: #7c3aed;
+            --error-color: #ef4444;
         }
 
-        #inline-ai-popup::after {
-            content: '';
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            height: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .progress-container {
+            flex-grow: 1;
+            margin: 0 20px;
+            background: #e5e7eb;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1.6fr;
+            gap: 20px;
+            flex-grow: 1;
+            min-height: 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-height: 650px;
+        }
+
+        .instruction-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .info-box {
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .info-list {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #334155;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #warning-msg {
+            color: var(--error-color);
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-top: 5px;
+            min-height: 1.2rem;
+            transition: opacity 0.3s;
+            opacity: 0;
+        }
+
+        .chart-container {
+            flex-grow: 1;
+            background: #fafafa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            min-height: 250px;
+            position: relative;
+        }
+
+        table {
+            width: 100%;
+            font-size: 0.85rem;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+
+        .history-wrapper {
+            position: relative;
+            overflow: visible;
+            border-top: 1px solid #eee;
+        }
+
+        .history-scroll {
+            overflow-y: auto;
+            height: 320px;
+            position: relative;
+        }
+
+        .comment-btn {
+            cursor: pointer;
+            color: var(--ai-color);
+            font-weight: bold;
+            border: 1px solid var(--ai-color);
+            background: #fff;
+            padding: 5px 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .comment-btn:hover {
+            background: var(--ai-color);
+            color: #fff;
+        }
+
+        .comment-btn.new-comment {
+            animation: pulseGlow 1s ease-in-out 2;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); }
+            50% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.12); }
+            100% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); }
+        }
+
+        #table-ai-popup {
+            display: none;
             position: absolute;
-            top: 20px;
-            right: -10px;
-            border-width: 10px 0 10px 10px;
+            width: 360px;
+            max-width: calc(100% - 30px);
+            background: #ffffff;
+            border: 2px solid var(--ai-color);
+            border-radius: 16px;
+            z-index: 300;
+            padding: 18px 20px;
+            text-align: left;
+            box-shadow: 0 12px 30px rgba(124, 58, 237, 0.22);
+            animation: popBubble 0.25s ease;
+        }
+
+        #table-ai-popup::after {
+            content: "";
+            position: absolute;
+            top: 18px;
+            left: -10px;
+            border-width: 10px 10px 10px 0;
             border-style: solid;
-            border-color: transparent transparent transparent var(--ai-color);
-            display: block;
-            width: 0;
+            border-color: transparent var(--ai-color) transparent transparent;
         }
 
         @keyframes popBubble {
-            0% { transform: translateY(20px) scale(0.9); opacity: 0; }
+            0% { transform: translateY(8px) scale(0.98); opacity: 0; }
             100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        #table-ai-text {
+            font-size: 0.93rem;
+            line-height: 1.55;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        #table-ai-close-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--ai-color);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #session-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .change-item {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 12px;
+            min-height: 60px;
+        }
+
+        .old-val {
+            color: #94a3b8;
+            text-decoration: line-through;
+            font-size: 1.1rem;
+        }
+
+        .new-val {
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+
+        .no-change {
+            color: #64748b;
+            font-weight: normal;
+            font-size: 1.1rem;
+            width: 100%;
+            text-align: center;
         }
     </style>
 </head>
@@ -91,10 +308,13 @@
         <div class="modal-content">
             <h2 id="modal-title">세션 종료</h2>
             <p style="color: #64748b; margin-bottom: 25px;">다음 세션 시장 환경 변화 안내</p>
+
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">💰 원가(Cost) 변화</div>
             <div class="change-item" id="cost-box"></div>
+
             <div style="text-align: left; font-weight: bold; margin-left: 10px;">📈 수요 범위(Demand) 변화</div>
             <div class="change-item" id="dist-box"></div>
+
             <button class="submit-btn" id="modal-confirm-btn" onclick="closeModal()">확인 및 다음 세션 시작 (Enter)</button>
         </div>
     </div>
@@ -109,10 +329,12 @@
                 <li><b>조건 변화:</b> 각 세션마다 상품의 <b>원가</b>와 <b>수요 발생 범위</b>가 달라집니다.</li>
             </ul>
         </div>
+
         <div style="margin-top: 10px;">
             <label style="display:block; font-weight:bold; margin-bottom:8px;">피실험자 고유 코드 (Subject ID):</label>
             <input type="text" id="subject-id" placeholder="ID를 입력하고 Enter를 누르세요.">
         </div>
+
         <button class="submit-btn" id="start-btn">지침을 이해했습니다. 실험 시작</button>
     </div>
 
@@ -122,10 +344,11 @@
             <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
             <div>ROUND <span id="current-round-display">1</span>/10 | 누적 수익: <span id="total-profit">0</span>원</div>
         </div>
+
         <div class="main-container">
             <div class="card" id="decision-panel">
                 <h3 style="margin-top:0;">Decision Panel</h3>
-                
+
                 <div id="info-area" class="info-box">
                     <h4 style="margin: 0 0 5px 0; color: #1e293b;">📊 현재 시장 환경 정보</h4>
                     <ul class="info-list">
@@ -147,22 +370,34 @@
                     <input type="number" id="order-qty" placeholder="위 정보를 바탕으로 수량 입력">
                     <div id="warning-msg"></div>
                     <button class="submit-btn" id="btn-submit">주문 제출 (Submit)</button>
-                    
-                    <div id="inline-ai-popup">
-                        <div id="inline-ai-text" style="font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px; color: #333;">
-                            </div>
-                        <button class="submit-btn" onclick="closeAiPopup()" style="background: var(--ai-color); margin-top: 5px; padding: 10px; font-size:1rem;">확인 및 다음 라운드 진행 (Enter)</button>
-                    </div>
                 </div>
             </div>
-            
-            <div class="card">
+
+            <div class="card" id="history-card">
                 <div class="chart-container"><canvas id="demandChart"></canvas></div>
-                <div style="overflow-y:auto; height: 320px; border-top:1px solid #eee;">
-                    <table>
-                        <thead><tr><th>Sess</th><th>Rnd</th><th>최적(Q*)</th><th>나</th><th>수요</th><th>수익</th></tr></thead>
-                        <tbody id="history-table-body"></tbody>
-                    </table>
+
+                <div class="history-wrapper">
+                    <div class="history-scroll" id="history-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Sess</th>
+                                    <th>Rnd</th>
+                                    <th>최적(Q*)</th>
+                                    <th>나</th>
+                                    <th>수요</th>
+                                    <th>수익</th>
+                                    <th>코멘트</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="table-ai-popup">
+                        <div id="table-ai-text"></div>
+                        <button id="table-ai-close-btn" onclick="handlePopupClose()">확인 및 다음 라운드 진행 (Enter)</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -174,57 +409,85 @@
         let cost, optimalQ, minD, maxD, totalProfit = 0;
         const localDataLog = [];
 
+        let isLockedByPopup = false;
+        let mustAdvanceAfterPopup = false;
+        let activeCommentButton = null;
+
         document.addEventListener('DOMContentLoaded', () => {
             try {
-                _supabase = supabase.createClient('https://rrbiyvcjtqvdfhudagnk.supabase.co', 'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV');
-            } catch(e) { console.error("Supabase 로드 실패:", e); }
+                _supabase = supabase.createClient(
+                    'https://rrbiyvcjtqvdfhudagnk.supabase.co',
+                    'sb_publishable_pWpbnjDOm4LihZ8k720qhA_VPCRcCnV'
+                );
+            } catch(e) {
+                console.error("Supabase 로드 실패:", e);
+            }
 
             document.getElementById('start-btn').onclick = startExperiment;
             document.getElementById('btn-submit').onclick = submitOrder;
 
             window.addEventListener('keydown', (e) => {
+                const sessionModal = document.getElementById('session-modal');
+                const tablePopup = document.getElementById('table-ai-popup');
+
                 if (e.key === 'Enter') {
-                    const sessionModal = document.getElementById('session-modal');
-                    const inlinePopup = document.getElementById('inline-ai-popup');
-                    
                     if (sessionModal.style.display === 'flex') {
-                        e.preventDefault(); 
+                        e.preventDefault();
                         closeModal();
+                        return;
                     }
-                    else if (inlinePopup.style.display === 'block') {
-                        e.preventDefault(); 
-                        closeAiPopup();
+
+                    if (tablePopup.style.display === 'block') {
+                        e.preventDefault();
+                        handlePopupClose();
+                        return;
                     }
                 }
             });
 
             document.getElementById('subject-id').addEventListener('keydown', (e) => {
-                if(e.key === 'Enter') { e.preventDefault(); startExperiment(); }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    startExperiment();
+                }
             });
 
             document.getElementById('order-qty').addEventListener('keydown', (e) => {
-                if(e.key === 'Enter') {
-                    const inlinePopup = document.getElementById('inline-ai-popup');
-                    if (inlinePopup.style.display !== 'block') {
-                        e.preventDefault(); 
-                        submitOrder();
-                    }
+                if (e.key === 'Enter' && !isLockedByPopup) {
+                    e.preventDefault();
+                    submitOrder();
+                }
+            });
+
+            document.getElementById('history-scroll').addEventListener('scroll', () => {
+                hideTablePopup(false);
+            });
+
+            window.addEventListener('resize', () => {
+                if (activeCommentButton && document.getElementById('table-ai-popup').style.display === 'block') {
+                    showTablePopupAtButton(activeCommentButton, activeCommentButton.dataset.commentHtml, mustAdvanceAfterPopup);
                 }
             });
         });
 
         function updateEnvironment() {
             const costs = [3000, 9000, 3000, 9000];
-            const dists = [{min:1, max:100}, {min:1, max:100}, {min:300, max:500}, {min:300, max:500}];
+            const dists = [
+                {min:1, max:100},
+                {min:1, max:100},
+                {min:300, max:500},
+                {min:300, max:500}
+            ];
+
             cost = costs[currentSession - 1];
             minD = dists[currentSession - 1].min;
             maxD = dists[currentSession - 1].max;
-            
-            const cu = price - cost; 
-            const co = cost;         
+
+            const cu = price - cost;
+            const co = cost;
             const criticalRatio = cu / (cu + co);
             optimalQ = Math.round(minD + (maxD - minD) * criticalRatio);
-            
+
             document.getElementById('header-cost').innerText = cost.toLocaleString();
             document.getElementById('header-dist').innerText = `U[${minD}, ${maxD}]`;
             document.getElementById('current-session').innerText = currentSession;
@@ -236,9 +499,14 @@
 
         function startExperiment() {
             subjectId = document.getElementById('subject-id').value.trim();
-            if (!subjectId) return alert("ID를 입력하세요.");
+            if (!subjectId) {
+                alert("ID를 입력하세요.");
+                return;
+            }
+
             document.getElementById('instruction-section').style.display = 'none';
             document.getElementById('experiment-section').style.display = 'block';
+
             updateEnvironment();
             generateNewScenario();
             drawChart();
@@ -247,31 +515,29 @@
         function generateNewScenario() {
             const actualDemand = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
             window.currentScenario = { ai: optimalQ, actual: actualDemand };
-            
+
             document.getElementById('order-qty').value = '';
-            document.getElementById('order-qty').focus();
             document.getElementById('current-round-display').innerText = currentRoundInSession;
+            document.getElementById('order-qty').focus();
         }
 
         function showWarning(text) {
             const warningEl = document.getElementById('warning-msg');
             warningEl.innerText = text;
             warningEl.style.opacity = "1";
-            setTimeout(() => { warningEl.style.opacity = "0"; }, 3000);
+            setTimeout(() => {
+                warningEl.style.opacity = "0";
+            }, 3000);
         }
 
-        function togglePastComment(id) {
-            const row = document.getElementById(`comment-${id}`);
-            if (row.style.display === 'none' || row.style.display === '') {
-                row.style.display = 'table-row';
-            } else {
-                row.style.display = 'none';
-            }
+        function setInputLocked(locked) {
+            isLockedByPopup = locked;
+            document.getElementById('order-qty').disabled = locked;
+            document.getElementById('btn-submit').disabled = locked;
         }
 
         function getAiRoundComment(qty, demand) {
             const tolerance = Math.max(2, Math.round((maxD - minD) * 0.05));
-            
             const followedOptimal = Math.abs(qty - optimalQ) <= tolerance;
             const demandMatched = Math.abs(qty - demand) <= tolerance;
 
@@ -280,14 +546,15 @@
             if (followedOptimal && demandMatched) {
                 title = "🎯 최적 주문량 일치";
                 desc = `최적 주문량에 맞게 훌륭한 의사결정을 내리셨군요! 운 좋게 실제 수요도 비슷하게 발생하여 좋은 수익을 거두셨습니다. 외부 요인에 흔들리지 말고 계속 지금처럼 최적 주문량을 유지하는 것이 가장 좋습니다.`;
-                return `<div style="font-weight:bold; color:var(--ai-color); margin-bottom:5px; font-size: 1.1rem;">${title}</div><div style="margin-bottom: 5px;">${desc}</div>`;
-                
+                return `
+                    <div style="font-weight:bold; color:var(--ai-color); margin-bottom:6px; font-size:1.05rem;">${title}</div>
+                    <div>${desc}</div>
+                `;
             } else if (followedOptimal && !demandMatched) {
                 title = "📊 합리적 결정 / 수요 빗나감";
                 desc = `최적 주문량에 기반한 합리적인 주문을 하셨지만, 이번 라운드는 실제 수요가 크게 빗나가서 아쉬우셨을 것 같습니다.`;
                 ver1 = `수식상 계산된 최적 주문량을 따라야만 최고의 누적 수익을 얻을 수 있습니다.`;
                 ver2 = `이전 라운드의 값은 독립시행이기 때문에, 그 값을 따라갈 필요가 없습니다.`;
-                
             } else {
                 title = "⚠️ 최적 주문량 불일치";
                 desc = `이번 라운드에서는 계산된 최적 주문량(Q*)에서 다소 벗어난 수량을 주문하셨군요.`;
@@ -296,41 +563,129 @@
             }
 
             return `
-                <div style="font-weight:bold; color:var(--ai-color); margin-bottom:5px; font-size: 1.1rem;">${title}</div>
-                <div style="margin-bottom: 10px;">${desc}</div>
-                <div style="padding: 6px 10px; background: #f8fafc; border-left: 3px solid #2563eb; margin-bottom: 5px; font-size: 0.85rem;">
+                <div style="font-weight:bold; color:var(--ai-color); margin-bottom:6px; font-size:1.05rem;">${title}</div>
+                <div style="margin-bottom:10px;">${desc}</div>
+                <div style="padding:7px 10px; background:#f8fafc; border-left:3px solid #2563eb; margin-bottom:6px; font-size:0.84rem;">
                     <b>[Ver 1]</b> ${ver1}
                 </div>
-                <div style="padding: 6px 10px; background: #fdf4ff; border-left: 3px solid #d946ef; font-size: 0.85rem;">
+                <div style="padding:7px 10px; background:#fdf4ff; border-left:3px solid #d946ef; font-size:0.84rem;">
                     <b>[Ver 2]</b> ${ver2}
                 </div>
             `;
         }
 
-        function closeAiPopup() {
-            document.getElementById('inline-ai-popup').style.display = 'none';
-            document.getElementById('order-qty').disabled = false;
-            document.getElementById('btn-submit').disabled = false;
+        function escapeHtmlAttr(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
 
+        function unescapeHtmlAttr(str) {
+            const txt = document.createElement('textarea');
+            txt.innerHTML = str;
+            return txt.value;
+        }
+
+        function openCommentPopup(buttonEl, lockedMode = false) {
+            const raw = buttonEl.getAttribute('data-comment-html') || '';
+            const html = unescapeHtmlAttr(raw);
+            showTablePopupAtButton(buttonEl, html, lockedMode);
+        }
+
+        function showTablePopupAtButton(buttonEl, html, lockedMode = false) {
+            const popup = document.getElementById('table-ai-popup');
+            const popupText = document.getElementById('table-ai-text');
+            const popupBtn = document.getElementById('table-ai-close-btn');
+            const wrapper = document.querySelector('.history-wrapper');
+
+            activeCommentButton = buttonEl;
+            mustAdvanceAfterPopup = lockedMode;
+
+            popupText.innerHTML = html;
+            popupBtn.textContent = lockedMode ? '확인 및 다음 라운드 진행 (Enter)' : '닫기';
+            popup.style.display = 'block';
+
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const btnRect = buttonEl.getBoundingClientRect();
+
+            popup.style.left = '0px';
+            popup.style.top = '0px';
+
+            const popupWidth = popup.offsetWidth;
+            const popupHeight = popup.offsetHeight;
+
+            let left = (btnRect.left - wrapperRect.left) - popupWidth - 14;
+            let top = (btnRect.top - wrapperRect.top) - 12;
+
+            if (left < 8) {
+                left = btnRect.right - wrapperRect.left + 14;
+                popup.style.setProperty('--bubble-arrow-side', 'left');
+                popup.style.setProperty('--bubble-arrow-color', 'var(--ai-color)');
+                popup.style.setProperty('--bubble-arrow-right', 'auto');
+            }
+
+            const maxLeft = wrapper.clientWidth - popupWidth - 8;
+            if (left > maxLeft) left = maxLeft;
+            if (left < 8) left = 8;
+
+            const maxTop = wrapper.clientHeight - popupHeight - 8;
+            if (top > maxTop) top = maxTop;
+            if (top < 8) top = 8;
+
+            popup.style.left = left + 'px';
+            popup.style.top = top + 'px';
+
+            if (lockedMode) {
+                setInputLocked(true);
+            }
+        }
+
+        function hideTablePopup(unlockInput = false) {
+            document.getElementById('table-ai-popup').style.display = 'none';
+            activeCommentButton = null;
+
+            if (unlockInput) {
+                setInputLocked(false);
+            }
+        }
+
+        function handlePopupClose() {
+            if (mustAdvanceAfterPopup) {
+                hideTablePopup(true);
+                mustAdvanceAfterPopup = false;
+                proceedAfterAcknowledgement();
+            } else {
+                hideTablePopup(false);
+            }
+        }
+
+        function proceedAfterAcknowledgement() {
             if (currentRoundInSession < roundsPerSession) {
-                currentRoundInSession++; totalRoundCount++;
+                currentRoundInSession++;
+                totalRoundCount++;
                 document.getElementById('progress-bar').style.width = (totalRoundCount / 40 * 100) + "%";
-                generateNewScenario(); 
+                generateNewScenario();
             } else if (currentSession < totalSessions) {
                 showSessionModal();
-            } else { 
-                saveAllDataToSupabase(); 
+            } else {
+                saveAllDataToSupabase();
             }
         }
 
         function submitOrder() {
+            if (isLockedByPopup) return;
+
             const qtyInput = document.getElementById('order-qty');
             const qty = parseInt(qtyInput.value);
+
             if (isNaN(qty) || qty < 0) {
                 showWarning("올바른 숫자를 입력하세요.");
                 qtyInput.focus();
                 return;
             }
+
             if (qty < minD || qty > maxD) {
                 showWarning(`범위를 벗어났습니다. (${minD} ~ ${maxD} 사이 입력 권장)`);
                 qtyInput.focus();
@@ -340,85 +695,113 @@
             const demand = window.currentScenario.actual;
             const profit = (Math.min(qty, demand) * price) - (qty * cost);
             totalProfit += profit;
-            
+
             localDataLog.push({
-                subject_id: subjectId, session_number: currentSession, round_in_session: currentRoundInSession,
-                total_round: totalRoundCount, cost: cost, ai_recommendation: optimalQ,
-                user_order: qty, actual_demand: demand, profit: profit, accumulated_profit: totalProfit
+                subject_id: subjectId,
+                session_number: currentSession,
+                round_in_session: currentRoundInSession,
+                total_round: totalRoundCount,
+                cost: cost,
+                ai_recommendation: optimalQ,
+                user_order: qty,
+                actual_demand: demand,
+                profit: profit,
+                accumulated_profit: totalProfit
             });
-            
+
             const roundId = `${currentSession}-${currentRoundInSession}`;
             const aiFeedback = getAiRoundComment(qty, demand);
-            
-            // 새 코멘트를 추가하기 전에 표에 열려있는 이전 라운드 코멘트들을 모두 닫기 처리
-            const allComments = document.querySelectorAll('.ai-comment-row');
-            allComments.forEach(comment => {
-                comment.style.display = 'none';
-            });
-            
+            const escapedComment = escapeHtmlAttr(aiFeedback);
+
             const row = `
-                <tr>
+                <tr id="row-${roundId}">
                     <td>${currentSession}</td>
-                    <td>${currentRoundInSession} <button class="toggle-btn" onclick="togglePastComment('${roundId}')">💬 코멘트</button></td>
+                    <td>${currentRoundInSession}</td>
                     <td>${optimalQ}</td>
                     <td>${qty}</td>
                     <td>${demand}</td>
                     <td>${profit.toLocaleString()}</td>
-                </tr>
-                <tr id="comment-${roundId}" class="ai-comment-row" style="display: table-row;">
-                    <td colspan="6" class="ai-comment-cell">
-                        <span style="font-size:0.95rem; color:#333; line-height:1.5;">${aiFeedback}</span>
+                    <td>
+                        <button
+                            class="comment-btn new-comment"
+                            id="comment-btn-${roundId}"
+                            data-comment-html="${escapedComment}"
+                            onclick="openCommentPopup(this, false)"
+                        >💬 보기</button>
                     </td>
                 </tr>
             `;
+
             document.getElementById('history-table-body').insertAdjacentHTML('afterbegin', row);
             document.getElementById('total-profit').innerText = totalProfit.toLocaleString();
 
             drawChart();
 
-            document.getElementById('inline-ai-text').innerHTML = aiFeedback;
-            document.getElementById('inline-ai-popup').style.display = 'block';
-            
-            document.getElementById('order-qty').disabled = true;
-            document.getElementById('btn-submit').disabled = true;
+            const newButton = document.getElementById(`comment-btn-${roundId}`);
+            const historyScroll = document.getElementById('history-scroll');
+            historyScroll.scrollTop = 0;
+
+            setTimeout(() => {
+                newButton.classList.remove('new-comment');
+                openCommentPopup(newButton, true);
+            }, 60);
         }
 
         function showSessionModal() {
             const costs = [3000, 9000, 3000, 9000];
             const distTexts = ["U[1, 100]", "U[1, 100]", "U[300, 500]", "U[300, 500]"];
+
             document.getElementById('modal-title').innerText = `세션 ${currentSession} 완료`;
-            const oldCost = costs[currentSession-1], newCost = costs[currentSession];
-            const oldDist = distTexts[currentSession-1], newDist = distTexts[currentSession];
+
+            const oldCost = costs[currentSession - 1];
+            const newCost = costs[currentSession];
+            const oldDist = distTexts[currentSession - 1];
+            const newDist = distTexts[currentSession];
+
             const costBox = document.getElementById('cost-box');
             const distBox = document.getElementById('dist-box');
 
-            if(oldCost === newCost) {
+            if (oldCost === newCost) {
                 costBox.innerHTML = `<span class="no-change">변화 없음 (${newCost.toLocaleString()}원)</span>`;
             } else {
                 costBox.innerHTML = `<span class="old-val">${oldCost.toLocaleString()}원</span><span class="arrow">➔</span><span class="new-val">${newCost.toLocaleString()}원</span>`;
             }
 
-            if(oldDist === newDist) {
+            if (oldDist === newDist) {
                 distBox.innerHTML = `<span class="no-change">변화 없음 (${newDist})</span>`;
             } else {
                 distBox.innerHTML = `<span class="old-val">${oldDist}</span><span class="arrow">➔</span><span class="new-val">${newDist}</span>`;
             }
+
             document.getElementById('session-modal').style.display = 'flex';
             document.getElementById('modal-confirm-btn').focus();
         }
 
         function closeModal() {
             document.getElementById('session-modal').style.display = 'none';
-            currentSession++; currentRoundInSession = 1; totalRoundCount++;
-            updateEnvironment(); generateNewScenario(); drawChart();
+            currentSession++;
+            currentRoundInSession = 1;
+            totalRoundCount++;
+
+            updateEnvironment();
+            generateNewScenario();
+            drawChart();
         }
 
         async function saveAllDataToSupabase() {
             const btn = document.getElementById('btn-submit');
-            btn.innerText = "저장 중..."; btn.disabled = true;
+            btn.innerText = "저장 중...";
+            btn.disabled = true;
+
             const { error } = await _supabase.from('experiment_results').insert(localDataLog);
-            if (error) { alert("저장 실패: " + error.message); btn.disabled = false; }
-            else { alert("✅ 모든 데이터가 저장되었습니다. 실험이 종료되었습니다."); }
+
+            if (error) {
+                alert("저장 실패: " + error.message);
+                btn.disabled = false;
+                btn.innerText = "주문 제출 (Submit)";
+            } else {
+                alert("✅ 모든 데이터가 저장되었습니다. 실험이 종료되었습니다.");
+            }
         }
 
         function drawChart() {
@@ -428,6 +811,7 @@
             const h = canvas.height = canvas.parentElement.clientHeight;
             const pad = 35;
             const xStep = (w - pad * 2) / 39;
+
             ctx.clearRect(0, 0, w, h);
 
             const sessionColors = ["#f8fafc", "#ffffff", "#f8fafc", "#ffffff"];
@@ -438,14 +822,14 @@
 
             if (currentSession >= 3) {
                 ctx.beginPath();
-                ctx.strokeStyle = "#333"; 
-                ctx.lineWidth = 2;        
-                ctx.setLineDash([5, 5]); 
+                ctx.strokeStyle = "#333";
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
                 const xLine = pad + 20 * xStep;
                 ctx.moveTo(xLine, 0);
                 ctx.lineTo(xLine, h - pad);
                 ctx.stroke();
-                ctx.setLineDash([]);      
+                ctx.setLineDash([]);
                 ctx.lineWidth = 1;
             }
 
@@ -455,30 +839,45 @@
                 return h - pad - ((val - currentMinY) / (currentMaxY - currentMinY) * (h - pad * 2));
             };
 
-            ctx.strokeStyle = "#eee"; ctx.fillStyle = "#999"; ctx.font = "10px Arial";
-            for(let v=0; v<=100; v+=50) {
+            ctx.strokeStyle = "#eee";
+            ctx.fillStyle = "#999";
+            ctx.font = "10px Arial";
+
+            for (let v = 0; v <= 100; v += 50) {
                 let y = getY(v, 1);
-                ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + 20 * xStep, y); ctx.stroke();
-                ctx.fillText(v, 5, y+4);
+                ctx.beginPath();
+                ctx.moveTo(pad, y);
+                ctx.lineTo(pad + 20 * xStep, y);
+                ctx.stroke();
+                ctx.fillText(v, 5, y + 4);
             }
+
             if (currentSession >= 3) {
-                for(let v=300; v<=500; v+=100) {
+                for (let v = 300; v <= 500; v += 100) {
                     let y = getY(v, 3);
-                    ctx.beginPath(); ctx.moveTo(pad + 20 * xStep, y); ctx.lineTo(w-pad, y); ctx.stroke();
-                    ctx.fillText(v, w-pad+5, y+4);
+                    ctx.beginPath();
+                    ctx.moveTo(pad + 20 * xStep, y);
+                    ctx.lineTo(w - pad, y);
+                    ctx.stroke();
+                    ctx.fillText(v, w - pad + 5, y + 4);
                 }
             }
+
             if (localDataLog.length === 0) return;
+
             const drawL = (key, col, dash) => {
-                ctx.beginPath(); ctx.strokeStyle = col; ctx.setLineDash(dash ? [5, 5] : []);
+                ctx.beginPath();
+                ctx.strokeStyle = col;
+                ctx.setLineDash(dash ? [5, 5] : []);
                 localDataLog.forEach((d, i) => {
                     const x = pad + (i * xStep);
                     const y = getY(d[key], d.session_number);
-                    if (i === 0 || i === 10 || i === 20 || i === 30) ctx.moveTo(x, y); 
+                    if (i === 0 || i === 10 || i === 20 || i === 30) ctx.moveTo(x, y);
                     else ctx.lineTo(x, y);
                 });
                 ctx.stroke();
             };
+
             drawL('actual_demand', "#1f2937", false);
             drawL('ai_recommendation', "#7c3aed", true);
             drawL('user_order', "#2563eb", false);
