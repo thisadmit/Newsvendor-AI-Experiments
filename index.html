@@ -33,7 +33,8 @@
         .comment-btn.new-comment { animation: pulseGlow 1s ease-in-out 2; }
         @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); } 50% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.12); } }
         #table-ai-popup { display: none; position: absolute; width: 360px; max-width: calc(100% - 30px); background: #ffffff; border: 2px solid var(--ai-color); border-radius: 16px; z-index: 300; padding: 18px 20px; text-align: left; box-shadow: 0 12px 30px rgba(124, 58, 237, 0.22); animation: popBubble 0.25s ease; }
-        #table-ai-popup::after { content: ""; position: absolute; top: var(--tail-top, 50%); left: -10px; transform: translateY(-50%); border-width: 10px 10px 10px 0; border-style: solid; border-color: transparent var(--ai-color) transparent transparent; }
+        /* [수정됨] 꼬리가 오른쪽을 향하도록 변경 */
+        #table-ai-popup::after { content: ""; position: absolute; top: var(--tail-top, 50%); right: -10px; transform: translateY(-50%); border-width: 10px 0 10px 10px; border-style: solid; border-color: transparent transparent transparent var(--ai-color); }
         @keyframes popBubble { 0% { transform: translateY(8px) scale(0.98); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         #table-ai-text { font-size: 0.93rem; line-height: 1.55; color: #333; margin-bottom: 12px; }
         #table-ai-close-btn { width: 100%; padding: 10px; background: var(--ai-color); color: #fff; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
@@ -247,7 +248,8 @@
             popup.style.left = '0px'; popup.style.top = '0px';
             const popupWidth = popup.offsetWidth, popupHeight = popup.offsetHeight;
 
-            let left = (buttonRect.right - wrapperRect.left) + 24;
+            // [수정됨] 팝업을 버튼 왼쪽으로 밀어내도록 계산
+            let left = (buttonRect.left - wrapperRect.left) - popupWidth - 24;
             const buttonCenterY = (buttonRect.top + buttonRect.bottom) / 2;
             let top = (buttonCenterY - wrapperRect.top) - (popupHeight / 2);
 
