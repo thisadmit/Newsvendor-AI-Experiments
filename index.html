@@ -598,7 +598,7 @@
 
             activeCommentButton = buttonEl;
             mustAdvanceAfterPopup = lockedMode;
-
+    
             popupText.innerHTML = html;
             popupBtn.textContent = lockedMode ? '확인 및 다음 라운드 진행 (Enter)' : '닫기';
             popup.style.display = 'block';
@@ -613,8 +613,8 @@
             const popupHeight = popup.offsetHeight;
 
             const arrowSize = 10;
-            const buttonGap = 18;
-            const extraLeftShift = 8;
+            const buttonGap = 24;
+            const extraLeftShift = 40;
 
             let left = (buttonRect.left - wrapperRect.left) - popupWidth - arrowSize - buttonGap - extraLeftShift;
 
@@ -622,10 +622,11 @@
             let top = (buttonCenterY - wrapperRect.top) - (popupHeight / 2);
 
             const maxLeft = wrapper.clientWidth - popupWidth - 8;
+            const minLeft = -120;
             const maxTop = wrapper.clientHeight - popupHeight - 8;
 
             if (left > maxLeft) left = maxLeft;
-            if (left < 8) left = 8;
+            if (left < minLeft) left = minLeft;
             if (top > maxTop) top = maxTop;
             if (top < 8) top = 8;
 
