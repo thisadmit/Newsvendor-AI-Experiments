@@ -208,6 +208,11 @@
             50% { box-shadow: 0 0 0 8px rgba(124, 58, 237, 0.12); }
         }
 
+        #history-card {
+            overflow: visible !important;
+            z-index: 20;
+        }
+        
         #table-ai-popup {
             display: none;
             position: absolute;
@@ -216,7 +221,7 @@
             background: #ffffff;
             border: 2px solid var(--ai-color);
             border-radius: 16px;
-            z-index: 300;
+            z-index: 9999;
             padding: 18px 20px;
             text-align: left;
             box-shadow: 0 12px 30px rgba(124, 58, 237, 0.22);
